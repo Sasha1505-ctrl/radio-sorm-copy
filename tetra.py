@@ -142,6 +142,7 @@ class Tetra(KaitaiStruct):
             else:
                 self.body = self._io.read_bytes((self.len_rec - 2))
 
+/Reg
 
     class F(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
