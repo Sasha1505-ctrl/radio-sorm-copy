@@ -14,13 +14,14 @@ target = Tetra.from_file("CF0795.D00")
 from sqlalchemy import create_engine
 engine = create_engine('sqlite:///test.db',echo=True)
 
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
+from sqlalchemy import Table, Column, Integer, String,DateTime, MetaData, ForeignKey
 metadata = MetaData()
 regs = Table('regs', metadata,
         Column('id', Integer, primary_key=True),
         Column('served_nitsi', String(12)),
         Column('location', Integer),
         Column('prev_location', Integer),
+        Column('reg_at', DateTime)
         )
 metadata.create_all(engine)
 
@@ -34,9 +35,10 @@ for blk in target.block:
                 served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
                 location=event.body.location,
                 prev_location=event.body.prev_location,
-            )
+                reg_at=datetime(event.body.timestamp.full_year, event.body.timestamp.month, event.body.timestamp.day, event.body.timestamp.hour, event.body.timestamp.min, event.body.timestamp.sec, event.body.timestamp.msec),
+                )
             for event in blk.events.event if event.body.type == Tetra.Types.reg
-        ],
+        ]
     )
 #    for event in blk.events.event:
 #        co
