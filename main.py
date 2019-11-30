@@ -14,14 +14,16 @@ target = Tetra.from_file("CF0795.D00")
 from sqlalchemy import create_engine
 engine = create_engine('sqlite:///test.db',echo=True)
 
-from sqlalchemy import Table, Column, Integer, String,DateTime, MetaData, ForeignKey
+from sqlalchemy import Table, Column, Integer, String,DateTime, MetaData,PrimaryKeyConstraint
 metadata = MetaData()
 regs = Table('regs', metadata,
         Column('id', Integer, primary_key=True),
         Column('served_nitsi', String(12)),
         Column('location', Integer),
         Column('prev_location', Integer),
-        Column('reg_at', DateTime)
+        Column('reg_at', DateTime),
+        PrimaryKeyConstraint('id', 'served_nitsi',
+            name='reg_pk')
         )
 metadata.create_all(engine)
 
@@ -32,10 +34,11 @@ for blk in target.block:
         regs.insert(),
         [
             dict(
+                id=event.body.seq_num,
                 served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
                 location=event.body.location,
                 prev_location=event.body.prev_location,
-                reg_at=datetime(event.body.timestamp.full_year, event.body.timestamp.month, event.body.timestamp.day, event.body.timestamp.hour, event.body.timestamp.min, event.body.timestamp.sec, event.body.timestamp.msec),
+                reg_at=datetime(event.body.timestamp.full_year, event.body.timestamp.month.as_int, event.body.timestamp.day.as_int, event.body.timestamp.hour.as_int, event.body.timestamp.min.as_int, event.body.timestamp.sec.as_int, event.body.timestamp.msec.as_int*1000, None),
                 )
             for event in blk.events.event if event.body.type == Tetra.Types.reg
         ]
