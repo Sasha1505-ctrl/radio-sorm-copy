@@ -1,4 +1,4 @@
-from tetra import *
+from lib.tetra import Tetra
 from datetime import datetime, date, time
 from pprint import pprint
 
@@ -28,43 +28,94 @@ regs = Table('regs', metadata,
 metadata.create_all(engine)
 
 conn = engine.connect()
-buffer = []
 for blk in target.block:
-    conn.execute(
-        regs.insert(),
-        [
-            dict(
-                id=event.body.seq_num,
-                served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
-                location=event.body.location,
-                prev_location=event.body.prev_location,
-                reg_at=datetime(event.body.timestamp.full_year, event.body.timestamp.month.as_int, event.body.timestamp.day.as_int, event.body.timestamp.hour.as_int, event.body.timestamp.min.as_int, event.body.timestamp.sec.as_int, event.body.timestamp.msec.as_int*1000, None),
+ #   conn.execute(
+ #       regs.insert(),
+ #       [
+ #           dict(
+ #               id=event.body.seq_num,
+ #               served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
+ #               location=event.body.location,
+ #               prev_location=event.body.prev_location,
+ #               reg_at=datetime(
+ #                   event.body.timestamp.full_year,
+ #                   event.body.timestamp.month.as_int,
+ #                   event.body.timestamp.day.as_int,
+ #                   event.body.timestamp.hour.as_int,
+ #                   event.body.timestamp.min.as_int,
+ #                   event.body.timestamp.sec.as_int,
+ #                   event.body.timestamp.msec.as_int),
+ #               )
+ #           for event in blk.events.event if event.body.type == Tetra.Types.reg
+ #       ]
+ #   )
+    buffer = []
+    call_reference = None
+    for event in blk.events.event:
+        if event.body.type == Tetra.Types.toc:
+            """ Обработка записи инициализации вызова TOC """
+            pprint(event.body.seq_num)
+            if call_reference is not None:
+                pprint(f"Last ref is {call_reference}")
+                raise IOError("Не ожиданное вхождение записи TOC")
+            if event.body.members == 65535:
+                # Обработка персонального вызова
+                if event.body.call_reference == 0:
+                    # Звонок не состоялся
+                    call_reference = None
+                else:
+                    # Продолжаем разбирать звонок
+                    call_reference = event.body.call_reference
+            else:
+                # Обработка группового вызова
+                call_reference = None
+        if event.body.type == Tetra.Types.tcc:
+            """ Обработка запси терминации вызова TCC """
+            pprint(event.body.seq_num)
+            if call_reference is None:
+                pprint(f"Last ref is {call_reference}")
+                raise IOError("Неккоректная последовательность записей TOC -> TCC")
+            call_reference = None
+        if event.body.type == Tetra.Types.out_g:
+            """ Обработка записи звонка исходящего на фиксированную сеть """
+            if call_reference is None:
+                raise IOError("Некорректная последовательность записей TOC -> OUT_G")
+            call_reference = None
+        if event.body.type == Tetra.Types.in_g:
+            """ Обработка записи звонка пришедшего с внешней сети """
+            pprint(event.body.seq_num)
+            if call_reference is not None:
+                pprint(f"Last ref is {call_reference}")
+                raise IOError("Не ожиданное вхождение записи TOC")
+            if event.body.call_reference == 0:
+                # Звонок не состоялся
+                # Скорее всего для ИС Январь необходимо фиксировать несостоявшиеся звонки
+                call_reference = None
+            else:
+                # Продолжаем обрабатывать звонок
+                call_reference = event.body.call_reference
+ 
+        if event.body.type == Tetra.Types.reg:
+            """ Обработка записи о регистрации абонента """
+            served_nitsi = "".join([hex(i)[2:] for i in event.body.served_nitsi])
+            vdate_obj = event.body.timestamp
+            
+            buffer.append(
+                dict(
+                    id = event.body.seq_num,
+                    served_nitsi = served_nitsi,
+                    location = event.body.location,
+                    prev_location = event.body.prev_location,
+                    reg_at = datetime(
+                        event.body.timestamp.full_year,
+                        event.body.timestamp.month.as_int,
+                        event.body.timestamp.day.as_int,
+                        event.body.timestamp.hour.as_int,
+                        event.body.timestamp.min.as_int,
+                        event.body.timestamp.sec.as_int,
+                        event.body.timestamp.msec.as_int
+                    ),
                 )
-            for event in blk.events.event if event.body.type == Tetra.Types.reg
-        ]
-    )
-#    for event in blk.events.event:
-#        co
-#        if event.body.type == Tetra.Types.reg:
-#            served_nitsi = "".join([hex(i)[2:] for i in event.body.served_nitsi])
-#            buffer.append({
-#                served_nitsi:served_nitsi,
-#                location:event.body.location,
-#                prev_location:event.body.prev_location
-#            })
-#    session.bulk_insert_mapping(buffer)
-#    buffer = []
-#            ins = regs.insert().values(served_nitsi=served_nitsi,
-#                    location=event.body.location,
-#                    prev_location=event.body.prev_location)
-#            result = conn.execute(ins)
-
-#            date_obj = event.body.timestamp
-#            print(datetime(date_obj.full_year, date_obj.month.as_int,
-#                           date_obj.day.as_int, date_obj.hour.as_int,
-#                           date_obj.min.as_int, date_obj.sec.as_int,
-#                           date_obj.msec.as_int))
-#            print(event.body.location, event.body.prev_location)
-            #print("".join([f"{(ord(x)>>4)*10+(ord(x)&0x0F):02}" for x in event.body.served_nitsi]))
-
-
+            )
+    conn.execute(regs.insert(), buffer)
+    buffer = []
