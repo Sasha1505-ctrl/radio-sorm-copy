@@ -1,4 +1,4 @@
-from lib.tetra import Tetra
+from parser.tetra import Tetra
 from datetime import datetime, date, time
 from pprint import pprint
 
