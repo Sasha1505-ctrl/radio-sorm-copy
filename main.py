@@ -1,4 +1,4 @@
-from kaitai.lib.tetra import Tetra
+from kaitai.parser.tetra import Tetra
 from datetime import datetime, date, time
 from pprint import pprint
 
