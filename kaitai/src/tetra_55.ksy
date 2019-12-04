@@ -251,10 +251,24 @@ types:
         size: 6
       - id: conn_group
         type: u2
-      - id: mni
-        type: u4
       - id: pulse
         type: u2
+      - id: timestamp1
+        size: 8
+        type: time
+      - id: timestamp2
+        size: 8
+        type: time
+      - id: timestamp3
+        size: 8
+        type: time
+      - id: duration
+        type: u4
+      - id: termination
+        type: u1
+        enum: terminations
+      - id: diagnoistic
+        size: 2
       
   out_g:
     seq:
@@ -283,8 +297,6 @@ types:
         size: 6
       - id: conn_group
         size: 2
-      - id: mni
-        size: 4
       - id: event_time1
         size: 8
         type: time
@@ -294,6 +306,14 @@ types:
       - id: event_time3
         size: 8
         type: time
+      - id: duration
+        type: u4
+      - id: termination
+        type: u1
+        enum: terminations
+      - id: diagnoistic
+        size: 2
+
   frow:
     seq:
       - id: body
