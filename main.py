@@ -3,7 +3,7 @@ from kaitai.parser.tetra import Tetra
 from datetime import datetime
 from pprint import pprint
 import click
-
+from cdr import Cdr
 
 def bcdDigits(chars):
     for char in chars:
@@ -59,6 +59,7 @@ def parseCDR(filename):
         #     ]
         # )
         buffer = []
+        cdr = None
         call_reference = None
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
@@ -71,6 +72,8 @@ def parseCDR(filename):
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
                         # Звонок не состоялся
+                        cdr = Cdr()
+                        cdr.add_toc(event.body)
                         call_reference = None
                     else:
                         # Продолжаем разбирать звонок
