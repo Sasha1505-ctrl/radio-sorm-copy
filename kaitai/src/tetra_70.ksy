@@ -34,11 +34,11 @@ types:
             271: toc
             133: tcc
             113: in_g
-            99:  out_g
-            125: d
-            262: e
-            141: f
-            97:  reg
+            99: out_g
+            125: fraw
+            262: sds
+            141: pd
+            97: reg
   header:
     seq:
       - id: magic
@@ -254,7 +254,23 @@ types:
         type: u4
       - id: pulse
         type: u2
-      
+      - id: event_time1
+        size: 8
+        type: time
+      - id: event_time2
+        size: 8
+        type: time
+      - id: event_time3
+        size: 8
+        type: time
+      - id: duration
+        type: u4
+      - id: termination
+        type: u1
+        enum: terminations
+      - id: diagnoistic
+        size: 2
+
   out_g:
     seq:
       - id: type
@@ -293,15 +309,25 @@ types:
       - id: event_time3
         size: 8
         type: time
-  d:
+      - id: duration
+        type: u4
+      - id: pulses_pstn
+        size: 2
+      - id: termination
+        type: u1
+        enum: terminations
+      - id: diagnoistic
+        size: 2
+
+  fraw:
     seq:
       - id: body
         size: 125-2
-  e:
+  sds:
     seq:
       - id: body
         size: 262-2
-  f:
+  pd:
     seq:
       - id: body
         size: 141-2
@@ -337,8 +363,10 @@ types:
     - id: class_ms
       size: 4
     - id: subscriber_class
-      size: 4
+      size: 2
     - id: dxt_id
+      size: 4
+    - id: prev_dxt_id
       size: 4
     - id: location
       type: u2
@@ -348,8 +376,6 @@ types:
       size: 1
     - id: channel
       size: 1
-    - id: laja
-      size: 2
     - id: timestamp
       type: time
       size: 8
@@ -359,11 +385,7 @@ types:
       size: 1
     - id: diagnostic
       size: 2
-    
-  h:
-    seq:
-      - id: body
-        size: 271-2
+
   trailer:
     seq:
       - id: body
