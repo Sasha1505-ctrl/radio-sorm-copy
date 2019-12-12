@@ -68,19 +68,21 @@ def parseCDR(filename):
                 if call_reference is not None:
                     pprint(f"Last ref is {call_reference}")
                     raise IOError("Не ожиданное вхождение записи TOC")
+                cdr = Cdr()
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
                         # Звонок не состоялся
-                        cdr = Cdr()
-                        cdr.add_toc(event.body)
+                        cdr.add_toc(event.body, False, 'busy')
                         call_reference = None
                     else:
-                        # Продолжаем разбирать звонок
+                        # Звонок состоялся. Инициализируем GCDR
+                        cdr.add_toc(event.body)
                         call_reference = event.body.call_reference
                 else:
                     # Обработка группового вызова
                     call_reference = None
+                    cdr.add_toc(event.body)
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
                 pprint(event.body.seq_num)
