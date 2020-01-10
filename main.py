@@ -64,11 +64,7 @@ def parseCDR(filename):
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
-                pprint(event.body.seq_num)
-                if call_reference is not None:
-                    pprint(f"Last ref is {call_reference}")
-                    raise IOError("Не ожиданное вхождение записи TOC")
-                cdr = Cdr()
+                cdr = Cdr(event.body.call_reference)
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
@@ -85,10 +81,6 @@ def parseCDR(filename):
                     cdr.add_toc(event.body)
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
-                pprint(event.body.seq_num)
-                if call_reference is None:
-                    pprint(f"Last ref is {call_reference}")
-                    raise IOError("Неккоректная последовательность записей TOC -> TCC")
                 call_reference = None
             if event.body.type == Tetra.Types.out_g:
                 """ Обработка записи звонка исходящего на фиксированную сеть """
