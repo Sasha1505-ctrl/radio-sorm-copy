@@ -2,8 +2,10 @@
 from kaitai.parser.tetra import Tetra
 from datetime import datetime
 from pprint import pprint
+from typing import Optional
+from collections import deque
 import click
-from cdr import Cdr
+from cdr import Gcdr, Subscriber, Dvo
 
 def bcdDigits(chars):
     for char in chars:
@@ -58,44 +60,53 @@ def parseCDR(filename):
         #         for event in blk.events.event if event.body.type == Tetra.Types.reg
         #     ]
         # )
+        callStack = deque()
         buffer = []
-        cdr = None
-        call_reference = None
+        call_reference: Optional[int] = None
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
-                cdr = Cdr(event.body.call_reference)
+                if call_reference is not None:
+                   raise ValueError(f'Неожиданное вхождение записи TCC. Обработка звонка {call_reference} завершена не корректно.')
+                
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
-                        # Звонок не состоялся
-                        cdr.add_toc(event.body, False, 'busy')
+                        # Звонок не состоялся. Строим GCDR и сохраняем в CSV
                         call_reference = None
                     else:
-                        # Звонок состоялся. Инициализируем GCDR
-                        cdr.add_toc(event.body)
+                        # Звонок состоялся. Инициализируем GCDR и ждем TCC
+                        callStack.append(event.body)
                         call_reference = event.body.call_reference
                 else:
-                    # Обработка группового вызова
+                    # Обработка группового вызова. Строим GCDR и сохраняем его в CSV
                     call_reference = None
-                    cdr.add_toc(event.body)
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
+                if call_reference is None:
+                    raise ValueError(f'Не обработана запис TOC для звонка {call_reference}')
+                if call_reference == event.body.call_reference:
+                    """Все совпало. Будем собирать Gcdr"""
+                    toc = callStack.pop()
+                    tcc = event.body
+                    dvo = Dvo(False)
+                    userA = Subscriber(0, toc.served_number, toc.location, toc.location)
+                    userB = Subscriber(0, tcc.served_number, tcc.location, tcc.location)
+                    gcdr = Gcdr(toc.dxt_id, '23', toc.event_time_stamps1, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                    pprint(gcdr)
                 call_reference = None
             if event.body.type == Tetra.Types.out_g:
                 """ Обработка записи звонка исходящего на фиксированную сеть """
                 if call_reference is None:
-                    raise IOError("Некорректная последовательность записей TOC -> OUT_G")
+                    raise ValueError(f'Не обработана запись TOC для звонка {call_reference}')
                 call_reference = None
             if event.body.type == Tetra.Types.in_g:
-                """ Обработка записи звонка пришедшего с внешней сети """
+                """ Обработка записи звонка пришедшего из внешней сети """
                 pprint(event.body.seq_num)
                 if call_reference is not None:
-                    pprint(f"Last ref is {call_reference}")
-                    raise IOError("Не ожиданное вхождение записи TOC")
+                    raise ValueError(f'Неожиданное вхождение записи IN_G. Обработка звонка {call_reference} завершена не корректно.')
                 if event.body.call_reference == 0:
-                    # Звонок не состоялся
-                    # Скорее всего для ИС Январь необходимо фиксировать несостоявшиеся звонки
+                    # Звонок не состоялся. Строим GCDR и сохраняем его в CSV
                     call_reference = None
                 else:
                     # Продолжаем обрабатывать звонок
