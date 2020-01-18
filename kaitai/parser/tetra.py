@@ -10,6 +10,8 @@ if parse_version(ks_version) < parse_version('0.7'):
 
 from .bcd import Bcd
 class Tetra(KaitaiStruct):
+    """CDR Parser for Tetra switch software v7.0
+    """
 
     class Terminations(Enum):
         ok = 1
@@ -49,17 +51,6 @@ class Tetra(KaitaiStruct):
             i += 1
 
 
-    class E(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.body = self._io.read_bytes((262 - 2))
-
-
     class Reg(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -82,13 +73,13 @@ class Tetra(KaitaiStruct):
             self.authentication = self._io.read_bytes(1)
             self.encription = self._io.read_bytes(1)
             self.class_ms = self._io.read_bytes(4)
-            self.subscriber_class = self._io.read_bytes(4)
+            self.subscriber_class = self._io.read_bytes(2)
             self.dxt_id = self._io.read_bytes(4)
+            self.prev_dxt_id = self._io.read_bytes(4)
             self.location = self._io.read_u2le()
             self.prev_location = self._io.read_u2le()
             self.cell = self._io.read_bytes(1)
             self.channel = self._io.read_bytes(1)
-            self.laja = self._io.read_bytes(2)
             self._raw_timestamp = self._io.read_bytes(8)
             io = KaitaiStream(BytesIO(self._raw_timestamp))
             self.timestamp = self._root.Time(io, self, self._root)
@@ -110,7 +101,7 @@ class Tetra(KaitaiStruct):
             if _on == 141:
                 self._raw_body = self._io.read_bytes((self.len_rec - 2))
                 io = KaitaiStream(BytesIO(self._raw_body))
-                self.body = self._root.F(io, self, self._root)
+                self.body = self._root.Pd(io, self, self._root)
             elif _on == 113:
                 self._raw_body = self._io.read_bytes((self.len_rec - 2))
                 io = KaitaiStream(BytesIO(self._raw_body))
@@ -122,7 +113,7 @@ class Tetra(KaitaiStruct):
             elif _on == 262:
                 self._raw_body = self._io.read_bytes((self.len_rec - 2))
                 io = KaitaiStream(BytesIO(self._raw_body))
-                self.body = self._root.E(io, self, self._root)
+                self.body = self._root.Sds(io, self, self._root)
             elif _on == 99:
                 self._raw_body = self._io.read_bytes((self.len_rec - 2))
                 io = KaitaiStream(BytesIO(self._raw_body))
@@ -130,7 +121,7 @@ class Tetra(KaitaiStruct):
             elif _on == 125:
                 self._raw_body = self._io.read_bytes((self.len_rec - 2))
                 io = KaitaiStream(BytesIO(self._raw_body))
-                self.body = self._root.D(io, self, self._root)
+                self.body = self._root.Fraw(io, self, self._root)
             elif _on == 271:
                 self._raw_body = self._io.read_bytes((self.len_rec - 2))
                 io = KaitaiStream(BytesIO(self._raw_body))
@@ -143,7 +134,7 @@ class Tetra(KaitaiStruct):
                 self.body = self._io.read_bytes((self.len_rec - 2))
 
 
-    class F(KaitaiStruct):
+    class Sds(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -151,7 +142,18 @@ class Tetra(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.body = self._io.read_bytes((141 - 2))
+            self.body = self._io.read_bytes((262 - 2))
+
+
+    class Fraw(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.body = self._io.read_bytes((125 - 2))
 
 
     class Block(KaitaiStruct):
@@ -167,6 +169,17 @@ class Tetra(KaitaiStruct):
             io = KaitaiStream(BytesIO(self._raw_events))
             self.events = self._root.Events(io, self, self._root)
             self.trailer = self._root.Trailer(self._io, self, self._root)
+
+
+    class Pd(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.body = self._io.read_bytes((141 - 2))
 
 
     class Trailer(KaitaiStruct):
@@ -201,15 +214,19 @@ class Tetra(KaitaiStruct):
             self.out_int = self._io.read_bytes(6)
             self.conn_group = self._io.read_bytes(2)
             self.mni = self._io.read_bytes(4)
-            self._raw_event_time1 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time1))
-            self.event_time1 = self._root.Time(io, self, self._root)
-            self._raw_event_time2 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time2))
-            self.event_time2 = self._root.Time(io, self, self._root)
-            self._raw_event_time3 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time3))
-            self.event_time3 = self._root.Time(io, self, self._root)
+            self._raw_setup_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_setup_time))
+            self.setup_time = self._root.Time(io, self, self._root)
+            self._raw_answer_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_answer_time))
+            self.answer_time = self._root.Time(io, self, self._root)
+            self._raw_release_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_release_time))
+            self.release_time = self._root.Time(io, self, self._root)
+            self.duration = self._io.read_u4le()
+            self.pulses_pstn = self._io.read_bytes(2)
+            self.termination = self._root.Terminations(self._io.read_u1())
+            self.diagnoistic = self._io.read_bytes(2)
 
 
     class Header(KaitaiStruct):
@@ -273,32 +290,21 @@ class Tetra(KaitaiStruct):
             self.channel_usage_time = self._io.read_bytes(4)
             self.number_of_groups = self._io.read_bytes(1)
             self.list_of_groups = self._io.read_bytes(80)
-            self._raw_event_time_stamps1 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time_stamps1))
-            self.event_time_stamps1 = self._root.Time(io, self, self._root)
-            self._raw_event_time_stamps2 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time_stamps2))
-            self.event_time_stamps2 = self._root.Time(io, self, self._root)
-            self._raw_event_time_stamps3 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time_stamps3))
-            self.event_time_stamps3 = self._root.Time(io, self, self._root)
-            self._raw_event_time_stamps4 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_event_time_stamps4))
-            self.event_time_stamps4 = self._root.Time(io, self, self._root)
+            self._raw_setup_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_setup_time))
+            self.setup_time = self._root.Time(io, self, self._root)
+            self._raw_answer_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_answer_time))
+            self.answer_time = self._root.Time(io, self, self._root)
+            self._raw_connected_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_connected_time))
+            self.connected_time = self._root.Time(io, self, self._root)
+            self._raw_release_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_release_time))
+            self.release_time = self._root.Time(io, self, self._root)
             self.duration = self._io.read_u4le()
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnostic = self._io.read_bytes(2)
-
-
-    class H(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.body = self._io.read_bytes((271 - 2))
 
 
     class Time(KaitaiStruct):
@@ -350,6 +356,18 @@ class Tetra(KaitaiStruct):
             self.conn_group = self._io.read_u2le()
             self.mni = self._io.read_u4le()
             self.pulse = self._io.read_u2le()
+            self._raw_setup_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_setup_time))
+            self.setup_time = self._root.Time(io, self, self._root)
+            self._raw_answer_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_answer_time))
+            self.answer_time = self._root.Time(io, self, self._root)
+            self._raw_release_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_release_time))
+            self.release_time = self._root.Time(io, self, self._root)
+            self.duration = self._io.read_u4le()
+            self.termination = self._root.Terminations(self._io.read_u1())
+            self.diagnoistic = self._io.read_bytes(2)
 
 
     class Tcc(KaitaiStruct):
@@ -382,18 +400,18 @@ class Tetra(KaitaiStruct):
             self.duplex = self._io.read_bytes(1)
             self.hook = self._io.read_bytes(1)
             self.encription = self._io.read_bytes(1)
-            self._raw_timestamp1 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_timestamp1))
-            self.timestamp1 = self._root.Time(io, self, self._root)
-            self._raw_timestamp2 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_timestamp2))
-            self.timestamp2 = self._root.Time(io, self, self._root)
-            self._raw_timestamp3 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_timestamp3))
-            self.timestamp3 = self._root.Time(io, self, self._root)
-            self._raw_timestamp4 = self._io.read_bytes(8)
-            io = KaitaiStream(BytesIO(self._raw_timestamp4))
-            self.timestamp4 = self._root.Time(io, self, self._root)
+            self._raw_setup_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_setup_time))
+            self.setup_time = self._root.Time(io, self, self._root)
+            self._raw_answer_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_answer_time))
+            self.answer_time = self._root.Time(io, self, self._root)
+            self._raw_connected_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_connected_time))
+            self.connected_time = self._root.Time(io, self, self._root)
+            self._raw_release_time = self._io.read_bytes(8)
+            io = KaitaiStream(BytesIO(self._raw_release_time))
+            self.release_time = self._root.Time(io, self, self._root)
             self.duration = self._io.read_u4le()
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnoistic = self._io.read_bytes(2)
@@ -415,12 +433,4 @@ class Tetra(KaitaiStruct):
 
 
 
-    class D(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
 
-        def _read(self):
-            self.body = self._io.read_bytes((125 - 2))

@@ -73,6 +73,12 @@ def parseCDR(filename):
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
                         # Звонок не состоялся. Строим GCDR и сохраняем в CSV
+                        toc = event.body
+                        userA = Subscriber(0, toc.served_number, toc.location, toc.location)
+                        userB = Subscriber(0, toc.called_number, '255', '255')
+                        dvo = Dvo(False)
+                        gcdr = Gcdr(toc.dxt_id, '23', toc.setup_time, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                        pprint(gcdr)
                         call_reference = None
                     else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC
@@ -84,16 +90,25 @@ def parseCDR(filename):
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
                 if call_reference is None:
-                    raise ValueError(f'Не обработана запис TOC для звонка {call_reference}')
+                    raise ValueError(f'Не обработана запис TOC или InG для звонка {call_reference}')
                 if call_reference == event.body.call_reference:
                     """Все совпало. Будем собирать Gcdr"""
-                    toc = callStack.pop()
+                    pprint(event.body.seq_num)
+                    partial_cdr = callStack.pop()
                     tcc = event.body
                     dvo = Dvo(False)
-                    userA = Subscriber(0, toc.served_number, toc.location, toc.location)
-                    userB = Subscriber(0, tcc.served_number, tcc.location, tcc.location)
-                    gcdr = Gcdr(toc.dxt_id, '23', toc.event_time_stamps1, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
-                    pprint(gcdr)
+                    if type(partial_cdr) is Tetra.Toc:
+                        userA = Subscriber(0, partial_cdr.served_number, partial_cdr.location, partial_cdr.location)
+                        userB = Subscriber(0, tcc.served_number, tcc.location, tcc.location)
+                        gcdr = Gcdr(partial_cdr.dxt_id, '23', partial_cdr.setup_time, partial_cdr.duration, userA, userB, 0, 0, partial_cdr.termination, dvo)
+                        pprint(gcdr)
+                    elif type(partial_cdr) is Tetra.InG:
+                        userA = Subscriber(1, partial_cdr.calling_number, '255', '255')
+                        userB = Subscriber(0, tcc.served_nitsi, tcc.location, tcc.location)
+                        gcdr = Gcdr(tcc.dxt_id, '23', tcc.setup_time, tcc.duration, userA, userB, 0, 0, tcc.termination, dvo)
+                        pprint(gcdr)
+                    else:
+                        raise ValueError(f'Вхождение объекта неожиданного типа')
                 call_reference = None
             if event.body.type == Tetra.Types.out_g:
                 """ Обработка записи звонка исходящего на фиксированную сеть """
@@ -110,6 +125,7 @@ def parseCDR(filename):
                     call_reference = None
                 else:
                     # Продолжаем обрабатывать звонок
+                    callStack.append(event.body)
                     call_reference = event.body.call_reference
 
             if event.body.type == Tetra.Types.reg:

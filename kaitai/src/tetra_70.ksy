@@ -135,16 +135,16 @@ types:
         size: 1
       - id: list_of_groups
         size: 80
-      - id: event_time_stamps1
+      - id: setup_time
         size: 8
         type: time
-      - id: event_time_stamps2
+      - id: answer_time
         size: 8
         type: time
-      - id: event_time_stamps3
+      - id: connected_time
         size: 8
         type: time
-      - id: event_time_stamps4
+      - id: release_time
         size: 8
         type: time
       - id: duration
@@ -201,16 +201,16 @@ types:
         size: 1
       - id: encription
         size: 1
-      - id: timestamp1
+      - id: setup_time
         size: 8
         type: time
-      - id: timestamp2
+      - id: answer_time
         size: 8
         type: time
-      - id: timestamp3
+      - id: connected_time
         size: 8
         type: time
-      - id: timestamp4
+      - id: release_time
         size: 8
         type: time
       - id: duration
@@ -254,13 +254,13 @@ types:
         type: u4
       - id: pulse
         type: u2
-      - id: event_time1
+      - id: setup_time
         size: 8
         type: time
-      - id: event_time2
+      - id: answer_time
         size: 8
         type: time
-      - id: event_time3
+      - id: release_time
         size: 8
         type: time
       - id: duration
@@ -300,13 +300,13 @@ types:
         size: 2
       - id: mni
         size: 4
-      - id: event_time1
+      - id: setup_time
         size: 8
         type: time
-      - id: event_time2
+      - id: answer_time
         size: 8
         type: time
-      - id: event_time3
+      - id: release_time
         size: 8
         type: time
       - id: duration
