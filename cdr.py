@@ -51,7 +51,7 @@ class Gcdr:
     call_type: тип соединения    
     """
     
-    dxt_id: int
+    dxt_id: str 
     provider_id: int
     date: datetime
     call_duration: int
@@ -63,7 +63,10 @@ class Gcdr:
     dvo: Dvo
     call_type: int = 1
 
-
+    def get_dxt_id(self):
+        return "".join([hex(i)[2:] for i in self.dxt_id])
+    def __str__(self):
+        return f'{self.get_dxt_id}'
 
 
 

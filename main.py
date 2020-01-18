@@ -15,6 +15,19 @@ def bcdDigits(chars):
                 return
             yield val
 
+def bcd_to_str(arr: bytearray) -> str:
+    return "".join([hex(i)[2:] for i in arr])
+  
+def bcd_to_time(tetra_time: Tetra.Time) -> datetime:
+        return datetime(
+            tetra_time.full_year,
+            tetra_time.month.as_int,
+            tetra_time.day.as_int,
+            tetra_time.hour.as_int,
+            tetra_time.min.as_int,
+            tetra_time.sec.as_int,
+            tetra_time.msec.as_int
+        )
 
 @click.command()
 @click.argument('filename', type=click.Path(exists=True))
@@ -49,13 +62,13 @@ def parseCDR(filename):
         #             location=event.body.location,
         #             prev_location=event.body.prev_location,
         #             reg_at=datetime(
-        #                 event.body.timestamp.full_year,
-        #                 event.body.timestamp.month.as_int,
-        #                 event.body.timestamp.day.as_int,
-        #                 event.body.timestamp.hour.as_int,
-        #                 event.body.timestamp.min.as_int,
-        #                 event.body.timestamp.sec.as_int,
-        #                 event.body.timestamp.msec.as_int),
+        #                 tetra_time.full_year,
+        #                 tetra_time.month.as_int,
+        #                 tetra_time.day.as_int,
+        #                 tetra_time.hour.as_int,
+        #                 tetra_time.min.as_int,
+        #                 tetra_time.sec.as_int,
+        #                 tetra_time.msec.as_int),
         #             )
         #         for event in blk.events.event if event.body.type == Tetra.Types.reg
         #     ]
@@ -77,7 +90,7 @@ def parseCDR(filename):
                         userA = Subscriber(0, toc.served_number, toc.location, toc.location)
                         userB = Subscriber(0, toc.called_number, '255', '255')
                         dvo = Dvo(False)
-                        gcdr = Gcdr(toc.dxt_id, '23', toc.setup_time, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                        gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', toc.setup_time, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
                         pprint(gcdr)
                         call_reference = None
                     else:
@@ -98,15 +111,15 @@ def parseCDR(filename):
                     tcc = event.body
                     dvo = Dvo(False)
                     if type(partial_cdr) is Tetra.Toc:
-                        userA = Subscriber(0, partial_cdr.served_number, partial_cdr.location, partial_cdr.location)
-                        userB = Subscriber(0, tcc.served_number, tcc.location, tcc.location)
-                        gcdr = Gcdr(partial_cdr.dxt_id, '23', partial_cdr.setup_time, partial_cdr.duration, userA, userB, 0, 0, partial_cdr.termination, dvo)
-                        pprint(gcdr)
+                        userA = Subscriber(0, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
+                        userB = Subscriber(0, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
+                        gcdr = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time), partial_cdr.duration, userA, userB, 0, 0, partial_cdr.termination, dvo)
+                        print(gcdr)
                     elif type(partial_cdr) is Tetra.InG:
-                        userA = Subscriber(1, partial_cdr.calling_number, '255', '255')
-                        userB = Subscriber(0, tcc.served_nitsi, tcc.location, tcc.location)
-                        gcdr = Gcdr(tcc.dxt_id, '23', tcc.setup_time, tcc.duration, userA, userB, 0, 0, tcc.termination, dvo)
-                        pprint(gcdr)
+                        userA = Subscriber(1, bcd_to_str(partial_cdr.calling_number), '255', '255')
+                        userB = Subscriber(0, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
+                        gcdr = Gcdr(bcd_to_str(tcc.dxt_id), '23', bcd_to_time(tcc.setup_time), tcc.duration, userA, userB, 0, 0, tcc.termination, dvo)
+                        print(gcdr)
                     else:
                         raise ValueError(f'Вхождение объекта неожиданного типа')
                 call_reference = None
@@ -130,24 +143,13 @@ def parseCDR(filename):
 
             if event.body.type == Tetra.Types.reg:
                 """ Обработка записи о регистрации абонента """
-                served_nitsi = "".join([hex(i)[2:] for i in event.body.served_nitsi])
-                vdate_obj = event.body.timestamp
-
                 buffer.append(
                     dict(
                         id = event.body.seq_num,
-                        served_nitsi = served_nitsi,
+                        served_nitsi = bcd_to_str(event.body.served_nitsi),
                         location = event.body.location,
                         prev_location = event.body.prev_location,
-                        reg_at = datetime(
-                            event.body.timestamp.full_year,
-                            event.body.timestamp.month.as_int,
-                            event.body.timestamp.day.as_int,
-                            event.body.timestamp.hour.as_int,
-                            event.body.timestamp.min.as_int,
-                            event.body.timestamp.sec.as_int,
-                            event.body.timestamp.msec.as_int
-                        ),
+                        reg_at = bcd_to_time(event.body.timestamp),
                     )
                 )
         conn.execute(regs.insert(), buffer)
