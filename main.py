@@ -81,7 +81,7 @@ def parseCDR(filename):
                 """ Обработка записи инициализации вызова TOC """
                 if call_reference is not None:
                    raise ValueError(f'Неожиданное вхождение записи TCC. Обработка звонка {call_reference} завершена не корректно.')
-                
+                pprint(f'TOC: {event.body.seq_num} cr: {call_reference}')
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
@@ -94,7 +94,7 @@ def parseCDR(filename):
                         pprint(gcdr)
                         call_reference = None
                     else:
-                        # Звонок состоялся. Инициализируем GCDR и ждем TCC
+                        # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG
                         callStack.append(event.body)
                         call_reference = event.body.call_reference
                 else:
@@ -104,33 +104,38 @@ def parseCDR(filename):
                 """ Обработка запси терминации вызова TCC """
                 if call_reference is None:
                     raise ValueError(f'Не обработана запис TOC или InG для звонка {call_reference}')
-                if call_reference == event.body.call_reference:
+                pprint(f'TCC: {event.body.seq_num} cr: {call_reference}')
+                partial_cdr = callStack.pop()
+                if partial_cdr.call_reference == event.body.call_reference:
                     """Все совпало. Будем собирать Gcdr"""
-                    pprint(event.body.seq_num)
-                    partial_cdr = callStack.pop()
                     tcc = event.body
                     dvo = Dvo(False)
                     if type(partial_cdr) is Tetra.Toc:
                         userA = Subscriber(0, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
                         userB = Subscriber(0, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
                         gcdr = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time), partial_cdr.duration, userA, userB, 0, 0, partial_cdr.termination, dvo)
+                        call_reference = None
                         print(gcdr)
                     elif type(partial_cdr) is Tetra.InG:
                         userA = Subscriber(1, bcd_to_str(partial_cdr.calling_number), '255', '255')
                         userB = Subscriber(0, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
                         gcdr = Gcdr(bcd_to_str(tcc.dxt_id), '23', bcd_to_time(tcc.setup_time), tcc.duration, userA, userB, 0, 0, tcc.termination, dvo)
+                        call_reference = None
                         print(gcdr)
                     else:
-                        raise ValueError(f'Вхождение объекта неожиданного типа')
-                call_reference = None
+                        raise ValueError(f'Неожиданный тип объекта {type(partial_cdr)}')
+                else:
+                    raise ValueError(f'Не соответствие call_reference обрабатываемых записей {partial_cdr.call_reference} != {event.body.call_reference}')
             if event.body.type == Tetra.Types.out_g:
                 """ Обработка записи звонка исходящего на фиксированную сеть """
                 if call_reference is None:
                     raise ValueError(f'Не обработана запись TOC для звонка {call_reference}')
+                pprint(f'OutG: {event.body.seq_num} cr: {call_reference}')
+                partial_cdr = callStack.pop()
                 call_reference = None
             if event.body.type == Tetra.Types.in_g:
                 """ Обработка записи звонка пришедшего из внешней сети """
-                pprint(event.body.seq_num)
+                pprint(f'InG: {event.body.seq_num} cr: {call_reference}')
                 if call_reference is not None:
                     raise ValueError(f'Неожиданное вхождение записи IN_G. Обработка звонка {call_reference} завершена не корректно.')
                 if event.body.call_reference == 0:

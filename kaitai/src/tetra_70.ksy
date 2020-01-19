@@ -282,7 +282,7 @@ types:
         type: u4
       - id: checksum
         type: u2
-      - id: seq_number
+      - id: seq_num
         type: u2
       - id: call_reference
         type: u4

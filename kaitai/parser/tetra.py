@@ -205,7 +205,7 @@ class Tetra(KaitaiStruct):
             self.version = self._io.read_u1()
             self.identity = self._io.read_u4le()
             self.checksum = self._io.read_u2le()
-            self.seq_number = self._io.read_u2le()
+            self.seq_num = self._io.read_u2le()
             self.call_reference = self._io.read_u4le()
             self.calling_number = self._io.read_bytes(10)
             self.calling_ntsi = self._io.read_bytes(10)
