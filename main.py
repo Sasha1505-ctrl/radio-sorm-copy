@@ -91,7 +91,7 @@ def parseCDR(filename):
                         userB = Subscriber(0, toc.called_number, '255', '255')
                         dvo = Dvo(False)
                         gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', toc.setup_time, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
-                        pprint(gcdr)
+                        print(gcdr)
                         call_reference = None
                     else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG

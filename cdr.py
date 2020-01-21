@@ -17,6 +17,12 @@ class Subscriber:
     start_location: int
     end_location: int
 
+    def getNumber(self):
+        return self.number
+    def __str__(self):
+        return '{getNumber()}'.format(self)
+
+
 
 @dataclass
 class Dvo:
