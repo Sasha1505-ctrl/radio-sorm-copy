@@ -17,7 +17,7 @@ def bcdDigits(chars):
 
 def bcd_to_str(arr: bytearray) -> str:
     return "".join([hex(i)[2:] for i in arr])
-  
+
 def bcd_to_time(tetra_time: Tetra.Time) -> datetime:
         return datetime(
             tetra_time.full_year,
@@ -90,7 +90,8 @@ def parseCDR(filename):
                         userA = Subscriber(0, toc.served_number, toc.location, toc.location)
                         userB = Subscriber(0, toc.called_number, '255', '255')
                         dvo = Dvo(False)
-                        gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', toc.setup_time, toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                        gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', toc.setup_time,
+                                    toc.duration, userA, userB, 0, 0, toc.termination, dvo)
                         print(gcdr)
                         call_reference = None
                     else:
@@ -99,6 +100,13 @@ def parseCDR(filename):
                         call_reference = event.body.call_reference
                 else:
                     # Обработка группового вызова. Строим GCDR и сохраняем его в CSV
+                    toc = event.body
+                    userA = Subscriber(0, toc.served_number, toc.location, toc.location)
+                    userB = Subscriber(0, toc.called_number, '255', '255')
+                    dvo = Dvo(False)
+                    gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', toc.setup_time,
+                                toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                    print(gcdr)
                     call_reference = None
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
