@@ -343,7 +343,7 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.dxt1 = self._io.read_u4le()
+            self.dxt_id = self._io.read_bytes(4)
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.call_reference = self._io.read_u4le()

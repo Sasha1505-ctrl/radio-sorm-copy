@@ -18,10 +18,14 @@ class Subscriber:
     end_location: int
 
     def getNumber(self):
+        # TODO Implement realisation
         return self.number
+
+    def getType(self):
+        #TODO Implement realisation
+        pass
     def __str__(self):
         return '{getNumber()}'.format(self)
-
 
 
 @dataclass
@@ -38,6 +42,15 @@ class Dvo:
     call_forvarding: str = '--'
     edge_dxt_id: str = '--'
     rouming_dxt_id = '--'
+
+
+@dataclass
+class Interface:
+    """
+    Интерфейс для входящих InG и исходящих OutG вызовов
+    """
+
+    #TODO Implement realisation
 
 
 @dataclass
