@@ -34,6 +34,20 @@ class Tetra(KaitaiStruct):
         farward = 7
         data = 8
         reg = 9
+
+    class UnitIndexT(Enum):
+        fnim0 = 0
+        fnim1 = 1
+        fnim2 = 2
+        fnim3 = 3
+        fnim4 = 4
+        fnim5 = 5
+        fnim6 = 6
+        fnim7 = 7
+        isdn = 8
+        fnimet = 9
+        sip = 10
+
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -49,7 +63,6 @@ class Tetra(KaitaiStruct):
             io = KaitaiStream(BytesIO(self._raw_block[-1]))
             self.block.append(self._root.Block(io, self, self._root))
             i += 1
-
 
     class Reg(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -86,7 +99,6 @@ class Tetra(KaitaiStruct):
             self.accept = self._io.read_bytes(1)
             self.reject = self._io.read_bytes(1)
             self.diagnostic = self._io.read_bytes(2)
-
 
     class Event(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -133,6 +145,18 @@ class Tetra(KaitaiStruct):
             else:
                 self.body = self._io.read_bytes((self.len_rec - 2))
 
+    class Interface(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.ui = self._root.UnitIndexT(self._io.read_u1())
+            self.pui_type = self._io.read_u2be()
+            self.pui_index = self._io.read_u2be()
+            self.ext_line_index = self._io.read_u1()
 
     class Sds(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -144,7 +168,6 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.body = self._io.read_bytes((262 - 2))
 
-
     class Fraw(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -154,7 +177,6 @@ class Tetra(KaitaiStruct):
 
         def _read(self):
             self.body = self._io.read_bytes((125 - 2))
-
 
     class Block(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -170,7 +192,6 @@ class Tetra(KaitaiStruct):
             self.events = self._root.Events(io, self, self._root)
             self.trailer = self._root.Trailer(self._io, self, self._root)
 
-
     class Pd(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -180,7 +201,6 @@ class Tetra(KaitaiStruct):
 
         def _read(self):
             self.body = self._io.read_bytes((141 - 2))
-
 
     class Trailer(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -203,15 +223,17 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.identity = self._io.read_u4le()
+            self.dxt_id = self._io.read_u4le()
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.call_reference = self._io.read_u4le()
             self.calling_number = self._io.read_bytes(10)
             self.calling_ntsi = self._io.read_bytes(10)
             self.transmitted_number = self._io.read_bytes(14)
-            self.dxt = self._io.read_bytes(4)
-            self.out_int = self._io.read_bytes(6)
+            self.served_dxt = self._io.read_bytes(4)
+            self._raw_out_int = self._io.read_bytes(6)
+            io = KaitaiStream(BytesIO(self._raw_out_int))
+            self.out_int = self._root.Interface(io, self, self._root)
             self.conn_group = self._io.read_bytes(2)
             self.mni = self._io.read_bytes(4)
             self._raw_setup_time = self._io.read_bytes(8)
@@ -227,7 +249,6 @@ class Tetra(KaitaiStruct):
             self.pulses_pstn = self._io.read_bytes(2)
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnoistic = self._io.read_bytes(2)
-
 
     class Header(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -247,7 +268,6 @@ class Tetra(KaitaiStruct):
             self.block_num = self._io.read_u2le()
             self.start_time = self._io.read_bytes(7)
             self.version = self._io.read_bytes(6)
-
 
     class Toc(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -306,7 +326,6 @@ class Tetra(KaitaiStruct):
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnostic = self._io.read_bytes(2)
 
-
     class Time(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -332,7 +351,6 @@ class Tetra(KaitaiStruct):
             self._m_full_year = ((self.age.as_int * 100) + self.year.as_int)
             return self._m_full_year if hasattr(self, '_m_full_year') else None
 
-
     class InG(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -351,8 +369,10 @@ class Tetra(KaitaiStruct):
             self.called_number = self._io.read_bytes(10)
             self.translated_number = self._io.read_bytes(14)
             self.translated_ntsi = self._io.read_bytes(10)
-            self.dxt = self._io.read_u4le()
-            self.inc_int = self._io.read_bytes(6)
+            self.served_dxt = self._io.read_bytes(4)
+            self._raw_inc_int = self._io.read_bytes(6)
+            io = KaitaiStream(BytesIO(self._raw_inc_int))
+            self.inc_int = self._root.Interface(io, self, self._root)
             self.conn_group = self._io.read_u2le()
             self.mni = self._io.read_u4le()
             self.pulse = self._io.read_u2le()
@@ -369,7 +389,6 @@ class Tetra(KaitaiStruct):
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnoistic = self._io.read_bytes(2)
 
-
     class Tcc(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -380,7 +399,7 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_bytes(1)
-            self.dxt = self._io.read_bytes(4)
+            self.dxt_id = self._io.read_bytes(4)
             self.checksum = self._io.read_bytes(2)
             self.seq_num = self._io.read_u2le()
             self.skeep = self._io.read_bytes(5)
@@ -390,7 +409,7 @@ class Tetra(KaitaiStruct):
             self.organisation_block = self._io.read_bytes(12)
             self.calling_number = self._io.read_bytes(14)
             self.calling_nitsi = self._io.read_bytes(10)
-            self.dxt_id = self._io.read_bytes(4)
+            self.served_dxt = self._io.read_bytes(4)
             self.location = self._io.read_u2le()
             self.call_identity = self._io.read_bytes(1)
             self.service = self._io.read_bytes(4)
@@ -416,7 +435,6 @@ class Tetra(KaitaiStruct):
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnoistic = self._io.read_bytes(2)
 
-
     class Events(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -430,7 +448,3 @@ class Tetra(KaitaiStruct):
             while not self._io.is_eof():
                 self.event.append(self._root.Event(self._io, self, self._root))
                 i += 1
-
-
-
-

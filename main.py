@@ -146,7 +146,7 @@ def parseCDR(filename):
                 userB = Subscriber(1, bcd_to_str(out_g.transmitted_number), '255', '255')
                 dvo = Dvo(False)
                 gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                            toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                            toc.duration, userA, userB, 0, out_g.out_int, toc.termination, dvo)
                 print(gcdr)
                 call_reference = None
             if event.body.type == Tetra.Types.in_g:
@@ -161,7 +161,7 @@ def parseCDR(filename):
                     userB = Subscriber(0, bcd_to_str(in_g.called_number), '255', '255')
                     dvo = Dvo(False)
                     gcdr = Gcdr(bcd_to_str(in_g.dxt_id), '23', bcd_to_time(in_g.setup_time), in_g.duration, userA, userB,
-                                0, 0, in_g.termination, dvo)
+                                in_g.inc_int, 0, in_g.termination, dvo)
                     print(gcdr)
                     call_reference = None
                 else:

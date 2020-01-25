@@ -4,7 +4,7 @@ meta:
   id: tetra
   file-extension: cdr
   endian: le
-  
+
   imports:
     - bcd
 seq:
@@ -14,7 +14,7 @@ seq:
     repeat: eos
 types:
   block:
-    seq:  
+    seq:
       - id: header
         type: header
       - id: events
@@ -159,9 +159,9 @@ types:
       - id: type
         type: u1
         enum: types
-      - id: version 
+      - id: version
         size: 1
-      - id: dxt
+      - id: dxt_id
         size: 4
       - id: checksum
         size: 2
@@ -181,7 +181,7 @@ types:
         size: 14
       - id: calling_nitsi
         size: 10
-      - id: dxt_id
+      - id: served_dxt
         size: 4
       - id: location
         type: u2
@@ -220,7 +220,7 @@ types:
         enum: terminations
       - id: diagnoistic
         size: 2
-        
+
   in_g:
     seq:
       - id: type
@@ -228,8 +228,8 @@ types:
         enum: types
       - id: version
         type: u1
-      - id: dxt1
-        type: u4
+      - id: dxt_id
+        size: 4
       - id: checksum
         type: u2
       - id: seq_num
@@ -244,10 +244,11 @@ types:
         size: 14
       - id: translated_ntsi
         size: 10
-      - id: dxt
-        type: u4
+      - id: served_dxt
+        size: 4
       - id: inc_int
         size: 6
+        type: interface
       - id: conn_group
         type: u2
       - id: mni
@@ -278,7 +279,7 @@ types:
         enum: types
       - id: version
         type: u1
-      - id: identity
+      - id: dxt_id
         type: u4
       - id: checksum
         type: u2
@@ -292,10 +293,11 @@ types:
         size: 10
       - id: transmitted_number
         size: 14
-      - id: dxt
+      - id: served_dxt
         size: 4
       - id: out_int
         size: 6
+        type: interface
       - id: conn_group
         size: 2
       - id: mni
@@ -412,6 +414,17 @@ types:
     instances:
       full_year:
         value: age.as_int*100 + year.as_int
+  interface:
+    seq:
+      - id: ui
+        type: u1
+        enum: unit_index_t
+      - id: pui_type
+        type: u2be
+      - id: pui_index
+        type: u2be
+      - id: ext_line_index
+        type: u1
 
 enums:
   terminations:
@@ -434,3 +447,15 @@ enums:
     7: farward
     8: data
     9: reg
+  unit_index_t:
+    0: fnim0
+    1: fnim1
+    2: fnim2
+    3: fnim3
+    4: fnim4
+    5: fnim5
+    6: fnim6
+    7: fnim7
+    8: isdn
+    9: fnimet
+    10: sip

@@ -43,16 +43,6 @@ class Dvo:
     edge_dxt_id: str = '--'
     rouming_dxt_id = '--'
 
-
-@dataclass
-class Interface:
-    """
-    Интерфейс для входящих InG и исходящих OutG вызовов
-    """
-
-    #TODO Implement realisation
-
-
 @dataclass
 class Gcdr:
     """
@@ -76,8 +66,8 @@ class Gcdr:
     call_duration: int
     abon_a: Subscriber
     abon_b: Subscriber
-    if_in: str
-    if_out: str
+    if_in: Tetra.Interface
+    if_out: Tetra.Interface
     call_termination: Tetra.Terminations
     dvo: Dvo
     call_type: int = 1
