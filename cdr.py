@@ -22,9 +22,9 @@ class Subscriber:
         return re.sub(r'[f]+', '', self.number)
 
     def getType(self) -> str:
-        if re.search(f'(102025007578)\d{3,4}', self.number):
+        if re.search(r'(10|e)(20250075)(78)?\d{3,4}', self.number):
             return 'RADIO'
-        elif re.search(f'(67)[2]?\d5', self.number):
+        elif re.search(r'(67)[2]?\d{5}', self.number):
             return 'VSS'
         else:
             return 'UNKNOWN'
@@ -39,7 +39,7 @@ class Interfacez:
     def __init__(self, int: Tetra.Interface):
         self._ui = int.ui
         self._pui_type = int.pui_type
-        self._put_index = int.ext_line_index
+        self._pui_index = int.pui_index
     def __str__(self):
         return f'Int: {self._ui}:{self._pui_type}{self._pui_index}'.format(self)
 

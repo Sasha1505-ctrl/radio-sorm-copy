@@ -186,10 +186,9 @@ def parseCDR(filename):
         reg_buffer = []
 
         # Write gcdrs to file
-        with open('out.csv', 'wb') as csv_file:
+        with open('out.csv', 'w') as csv_file:
             wr = csv.writer(csv_file, delimiter=',')
             for cdr in cdr_buffer:
-                #wr.writerow(list(cdr))
-                pprint(list(cdr))
+                wr.writerow(list(cdr))
 if __name__ == '__main__':
     parseCDR()
