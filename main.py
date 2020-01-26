@@ -2,10 +2,11 @@
 from kaitai.parser.tetra import Tetra
 from datetime import datetime
 from pprint import pprint
-from typing import Optional
+from typing import Optional, List
 from collections import deque
 import click
-from cdr import Gcdr, Subscriber, Dvo
+import csv
+from cdr import Gcdr, Subscriber, Dvo, Interfacez
 
 def bcdDigits(chars):
     for char in chars:
@@ -59,7 +60,7 @@ def parseCDR(filename):
         #         dict(
         #             id=event.body.seq_num,
         #             served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
-        #             location=event.body.location,
+    #             location=event.body.location,
         #             prev_location=event.body.prev_location,
         #             reg_at=datetime(
         #                 tetra_time.full_year,
@@ -74,7 +75,8 @@ def parseCDR(filename):
         #     ]
         # )
         callStack = deque()
-        buffer = []
+        reg_buffer: List[Tetra.Reg] = []
+        cdr_buffer: List[Gcdr] = []
         call_reference: Optional[int] = None
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
@@ -106,7 +108,7 @@ def parseCDR(filename):
                     dvo = Dvo(False)
                     gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
                                 toc.duration, userA, userB, 0, 0, toc.termination, dvo)
-                    print(gcdr)
+                    cdr_buffer.append(gcdr)
                     call_reference = None
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
@@ -123,14 +125,14 @@ def parseCDR(filename):
                         userB = Subscriber(0, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
                         gcdr = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time), partial_cdr.duration, userA, userB, 0, 0, partial_cdr.termination, dvo)
                         call_reference = None
-                        print(gcdr)
+                        cdr_buffer.append(gcdr)
                     elif type(partial_cdr) is Tetra.InG:
                         userA = Subscriber(1, bcd_to_str(partial_cdr.calling_number), '255', '255')
                         userB = Subscriber(0, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
                         gcdr = Gcdr(bcd_to_str(tcc.dxt_id), '23', bcd_to_time(tcc.setup_time),
                                     tcc.duration, userA, userB, 0, 0, tcc.termination, dvo)
+                        cdr_buffer.append(gcdr)
                         call_reference = None
-                        print(gcdr)
                     else:
                         raise ValueError(f'Неожиданный тип объекта {type(partial_cdr)}')
                 else:
@@ -146,8 +148,8 @@ def parseCDR(filename):
                 userB = Subscriber(1, bcd_to_str(out_g.transmitted_number), '255', '255')
                 dvo = Dvo(False)
                 gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                            toc.duration, userA, userB, 0, out_g.out_int, toc.termination, dvo)
-                print(gcdr)
+                            toc.duration, userA, userB, 0, Interfacez(out_g.out_int), toc.termination, dvo)
+                cdr_buffer.append(gcdr)
                 call_reference = None
             if event.body.type == Tetra.Types.in_g:
                 """ Обработка записи звонка пришедшего из внешней сети """
@@ -161,8 +163,8 @@ def parseCDR(filename):
                     userB = Subscriber(0, bcd_to_str(in_g.called_number), '255', '255')
                     dvo = Dvo(False)
                     gcdr = Gcdr(bcd_to_str(in_g.dxt_id), '23', bcd_to_time(in_g.setup_time), in_g.duration, userA, userB,
-                                in_g.inc_int, 0, in_g.termination, dvo)
-                    print(gcdr)
+                                Interfacez(in_g.inc_int), 0, in_g.termination, dvo)
+                    cdr_buffer.append(gcdr)
                     call_reference = None
                 else:
                     # Продолжаем обрабатывать звонок
@@ -171,7 +173,7 @@ def parseCDR(filename):
 
             if event.body.type == Tetra.Types.reg:
                 """ Обработка записи о регистрации абонента """
-                buffer.append(
+                reg_buffer.append(
                     dict(
                         id = event.body.seq_num,
                         served_nitsi = bcd_to_str(event.body.served_nitsi),
@@ -180,9 +182,14 @@ def parseCDR(filename):
                         reg_at = bcd_to_time(event.body.timestamp),
                     )
                 )
-        conn.execute(regs.insert(), buffer)
-        buffer = []
+        conn.execute(regs.insert(), reg_buffer)
+        reg_buffer = []
 
-
+        # Write gcdrs to file
+        with open('out.csv', 'wb') as csv_file:
+            wr = csv.writer(csv_file, delimiter=',')
+            for cdr in cdr_buffer:
+                #wr.writerow(list(cdr))
+                pprint(list(cdr))
 if __name__ == '__main__':
     parseCDR()

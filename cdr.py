@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from kaitai.parser.tetra import Tetra
 from datetime import datetime
@@ -18,14 +19,29 @@ class Subscriber:
     end_location: int
 
     def getNumber(self):
-        # TODO Implement realisation
-        return self.number
+        return re.sub(r'[f]+', '', self.number)
 
-    def getType(self):
-        #TODO Implement realisation
-        pass
+    def getType(self) -> str:
+        if re.search(f'(102025007578)\d{3,4}', self.number):
+            return 'RADIO'
+        elif re.search(f'(67)[2]?\d5', self.number):
+            return 'VSS'
+        else:
+            return 'UNKNOWN'
+
     def __str__(self):
-        return '{getNumber()}'.format(self)
+        return f'{self.getNumber()}'.format(self)
+
+class Interfacez:
+    """
+    Tetra.Interface class wrapper
+    """
+    def __init__(self, int: Tetra.Interface):
+        self._ui = int.ui
+        self._pui_type = int.pui_type
+        self._put_index = int.ext_line_index
+    def __str__(self):
+        return f'Int: {self._ui}:{self._pui_type}{self._pui_index}'.format(self)
 
 
 @dataclass
@@ -60,24 +76,28 @@ class Gcdr:
     call_type: тип соединения    
     """
     
-    dxt_id: str 
+    dxt_id: str
     provider_id: int
     date: datetime
     call_duration: int
     abon_a: Subscriber
     abon_b: Subscriber
-    if_in: Tetra.Interface
-    if_out: Tetra.Interface
+    if_in: Interfacez
+    if_out: Interfacez
     call_termination: Tetra.Terminations
     dvo: Dvo
     call_type: int = 1
 
+    @property
     def get_dxt_id(self):
         return "".join([hex(i)[2:] for i in self.dxt_id])
-    def __str__(self):
-        return f'{self.get_dxt_id}'
 
-
+    def __iter__(self):
+        return iter([str(self.date), self.call_duration, self.call_type, self.dvo.switch, self.abon_a.getType(),
+                     self.dxt_id, self.abon_b.getType(), str(self.if_in), str(self.if_out), self.dvo.edge_dxt_id,
+                     self.dvo.rouming_dxt_id, str(self.call_termination), self.abon_a.getNumber(),
+                     self.abon_a.start_location, self.abon_a.end_location, self.abon_b.getNumber(),
+                     self.abon_b.start_location, self.abon_b.end_location])
 
     #def __init__(self, call_reference):
     #    self.__call_reference = call_reference
