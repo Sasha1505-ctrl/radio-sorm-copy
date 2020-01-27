@@ -36,7 +36,7 @@ types:
             133: tcc
             109: in_g
             95: out_g
-            125: frow
+            125: fraw
             251: sds
             139: pd
             92: reg
