@@ -1,5 +1,6 @@
 doc: |
   CDR Parser for Tetra switch software v7.0
+
 meta:
   id: tetra
   file-extension: cdr
@@ -246,7 +247,7 @@ types:
         size: 10
       - id: served_dxt
         size: 4
-      - id: inc_int
+      - id: in_int
         size: 6
         type: interface
       - id: conn_group

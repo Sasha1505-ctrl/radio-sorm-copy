@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from kaitai.parser.tetra import Tetra
+from kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime
 
 @dataclass

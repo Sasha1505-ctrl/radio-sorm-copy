@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from kaitai.parser.tetra import Tetra
+from kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime
 from pprint import pprint
 from typing import Optional, List

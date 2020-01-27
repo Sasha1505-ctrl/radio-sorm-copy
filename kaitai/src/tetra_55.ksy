@@ -5,7 +5,7 @@ meta:
   id: tetra
   file-extension: cdr
   endian: le
-  
+
   imports:
     - bcd
 seq:
@@ -15,7 +15,7 @@ seq:
     repeat: eos
 types:
   block:
-    seq:  
+    seq:
       - id: header
         type: header
       - id: events
@@ -136,16 +136,16 @@ types:
         size: 1
       - id: list_of_groups
         size: 80
-      - id: event_time_stamps1
+      - id: setup_time
         size: 8
         type: time
-      - id: event_time_stamps2
+      - id: answer_time
         size: 8
         type: time
-      - id: event_time_stamps3
+      - id: connected_time
         size: 8
         type: time
-      - id: event_time_stamps4
+      - id: release_time
         size: 8
         type: time
       - id: duration
@@ -160,9 +160,9 @@ types:
       - id: type
         type: u1
         enum: types
-      - id: version 
+      - id: version
         size: 1
-      - id: dxt
+      - id: dxt_id
         size: 4
       - id: checksum
         size: 2
@@ -182,7 +182,7 @@ types:
         size: 14
       - id: calling_nitsi
         size: 10
-      - id: dxt_id
+      - id: served_dxt
         size: 4
       - id: location
         type: u2
@@ -202,16 +202,16 @@ types:
         size: 1
       - id: encription
         size: 1
-      - id: timestamp1
+      - id: setup_time
         size: 8
         type: time
-      - id: timestamp2
+      - id: answer_time
         size: 8
         type: time
-      - id: timestamp3
+      - id: connected_time
         size: 8
         type: time
-      - id: timestamp4
+      - id: release_time
         size: 8
         type: time
       - id: duration
@@ -221,7 +221,7 @@ types:
         enum: terminations
       - id: diagnoistic
         size: 2
-        
+
   in_g:
     seq:
       - id: type
@@ -229,8 +229,8 @@ types:
         enum: types
       - id: version
         type: u1
-      - id: dxt1
-        type: u4
+      - id: dxt_id
+        size: 4
       - id: checksum
         type: u2
       - id: seq_num
@@ -245,65 +245,22 @@ types:
         size: 14
       - id: translated_ntsi
         size: 10
-      - id: dxt
-        type: u4
-      - id: inc_int
+      - id: served_dxt
+        size: 4
+      - id: in_int
         size: 6
+        type: interface
       - id: conn_group
         type: u2
       - id: pulse
         type: u2
-      - id: timestamp1
+      - id: setup_time
         size: 8
         type: time
-      - id: timestamp2
+      - id: answer_time
         size: 8
         type: time
-      - id: timestamp3
-        size: 8
-        type: time
-      - id: duration
-        type: u4
-      - id: termination
-        type: u1
-        enum: terminations
-      - id: diagnoistic
-        size: 2
-      
-  out_g:
-    seq:
-      - id: type
-        type: u1
-        enum: types
-      - id: version
-        type: u1
-      - id: identity
-        type: u4
-      - id: checksum
-        type: u2
-      - id: seq_number
-        type: u2
-      - id: call_reference
-        type: u4
-      - id: calling_number
-        size: 10
-      - id: calling_ntsi
-        size: 10
-      - id: transmitted_number
-        size: 14
-      - id: dxt
-        size: 4
-      - id: out_int
-        size: 6
-      - id: conn_group
-        size: 2
-      - id: event_time1
-        size: 8
-        type: time
-      - id: event_time2
-        size: 8
-        type: time
-      - id: event_time3
+      - id: release_time
         size: 8
         type: time
       - id: duration
@@ -314,7 +271,52 @@ types:
       - id: diagnoistic
         size: 2
 
-  frow:
+  out_g:
+    seq:
+      - id: type
+        type: u1
+        enum: types
+      - id: version
+        type: u1
+      - id: dxt_id
+        type: u4
+      - id: checksum
+        type: u2
+      - id: seq_num
+        type: u2
+      - id: call_reference
+        type: u4
+      - id: calling_number
+        size: 10
+      - id: calling_ntsi
+        size: 10
+      - id: transmitted_number
+        size: 14
+      - id: served_dxt
+        size: 4
+      - id: out_int
+        size: 6
+        type: interface
+      - id: conn_group
+        size: 2
+      - id: setup_time
+        size: 8
+        type: time
+      - id: answer_time
+        size: 8
+        type: time
+      - id: release_time
+        size: 8
+        type: time
+      - id: duration
+        type: u4
+      - id: termination
+        type: u1
+        enum: terminations
+      - id: diagnoistic
+        size: 2
+
+  fraw:
     seq:
       - id: body
         size: 125-2
@@ -358,9 +360,9 @@ types:
     - id: class_ms
       size: 4
     - id: dxt_id
-      type: u4
+      size: 4
     - id: prev_dxt_id
-      type: u4
+      size: 4
     - id: location
       type: u2
     - id: prev_location
@@ -375,10 +377,6 @@ types:
     - id: reject
       size: 1
 
-  h:
-    seq:
-      - id: body
-        size: 271-2
   trailer:
     seq:
       - id: body
@@ -405,6 +403,17 @@ types:
     instances:
       full_year:
         value: age.as_int*100 + year.as_int
+  interface:
+    seq:
+      - id: ui
+        type: u1
+        enum: unit_index_t
+      - id: pui_type
+        type: u2be
+      - id: pui_index
+        type: u2be
+      - id: ext_line_index
+        type: u1
 
 enums:
   terminations:
@@ -427,3 +436,15 @@ enums:
     7: farward
     8: data
     9: reg
+  unit_index_t:
+    0: fnim0
+    1: fnim1
+    2: fnim2
+    3: fnim3
+    4: fnim4
+    5: fnim5
+    6: fnim6
+    7: fnim7
+    8: isdn
+    9: fnimet
+    10: sip
