@@ -247,6 +247,7 @@ class Tetra(KaitaiStruct):
             io = KaitaiStream(BytesIO(self._raw_release_time))
             self.release_time = self._root.Time(io, self, self._root)
             self.duration = self._io.read_u4le()
+            self.pulse = self._io.read_bytes(2)
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnoistic = self._io.read_bytes(2)
 

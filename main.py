@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime
 from pprint import pprint
 from typing import Optional, List
@@ -19,7 +18,7 @@ def bcdDigits(chars):
 def bcd_to_str(arr: bytearray) -> str:
     return "".join([hex(i)[2:] for i in arr])
 
-def bcd_to_time(tetra_time: Tetra.Time) -> datetime:
+def bcd_to_time(tetra_time) -> datetime:
         return datetime(
             tetra_time.full_year,
             tetra_time.month.as_int,
@@ -32,7 +31,13 @@ def bcd_to_time(tetra_time: Tetra.Time) -> datetime:
 
 @click.command()
 @click.argument('filename', type=click.Path(exists=True))
-def parseCDR(filename):
+@click.option('--version', default=7, help='version of Tetra software 5 or 7')
+def parseCDR(filename, version):
+
+    if version == 5:
+        from kaitai.parser.tetra_v5 import Tetra
+    else:
+        from kaitai.parser.tetra_v7 import Tetra
 
     from sqlalchemy import create_engine
     engine = create_engine('sqlite:///test.db', echo=True)
@@ -94,7 +99,7 @@ def parseCDR(filename):
                         dvo = Dvo(False)
                         gcdr = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
                                     toc.duration, userA, userB, 0, 0, toc.termination, dvo)
-                        print(gcdr)
+                        cdr_buffer.append(gcdr)
                         call_reference = None
                     else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG
@@ -182,13 +187,15 @@ def parseCDR(filename):
                         reg_at = bcd_to_time(event.body.timestamp),
                     )
                 )
-        conn.execute(regs.insert(), reg_buffer)
-        reg_buffer = []
+        if len(reg_buffer) > 0:
+            conn.execute(regs.insert(), reg_buffer)
+            reg_buffer = []
 
         # Write gcdrs to file
         with open('out.csv', 'w') as csv_file:
             wr = csv.writer(csv_file, delimiter=',')
             for cdr in cdr_buffer:
                 wr.writerow(list(cdr))
+
 if __name__ == '__main__':
     parseCDR()

@@ -310,6 +310,8 @@ types:
         type: time
       - id: duration
         type: u4
+      - id: pulse
+        size: 2
       - id: termination
         type: u1
         enum: terminations
