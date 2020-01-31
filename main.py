@@ -30,6 +30,12 @@ def bcd_to_time(tetra_time) -> datetime:
             tetra_time.sec.as_int,
             tetra_time.msec.as_int
         )
+def to_sec(dec_msec: int) -> int:
+    """
+    Convert 10 msec unit from Tetra CDR to sec
+    dec_msec: unit is 10 milliseconds
+    """
+    return round(dec_msec/100)
 
 @click.command()
 @click.argument('filename', type=click.Path(exists=True))
@@ -100,7 +106,7 @@ def parseCDR(filename, version):
                         userB = Subscriber(0, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         dvo = Dvo(False)
                         gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                                    toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                                    to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo)
                         cdr_buffer.append(gdp)
                         call_reference = None
                     else:
@@ -114,7 +120,7 @@ def parseCDR(filename, version):
                     userB = Subscriber(0, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                                toc.duration, userA, userB, 0, 0, toc.termination, dvo)
+                                to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo)
                     cdr_buffer.append(gdp)
                     call_reference = None
             if event.body.type == Tetra.Types.tcc:
@@ -130,14 +136,15 @@ def parseCDR(filename, version):
                     if type(partial_cdr) is Tetra.Toc:
                         userA = Subscriber(0, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
                         userB = Subscriber(0, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
-                        gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time), partial_cdr.duration, userA, userB, 0, 0, partial_cdr.termination, dvo)
+                        gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time),
+                                   to_sec(partial_cdr.duration), userA, userB, 0, 0, partial_cdr.termination, dvo)
                         call_reference = None
                         cdr_buffer.append(gdp)
                     elif type(partial_cdr) is Tetra.InG:
                         userA = Subscriber(1, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         userB = Subscriber(0, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
                         gdp = Gcdr(bcd_to_str(tcc.dxt_id), '23', bcd_to_time(tcc.setup_time),
-                                    tcc.duration, userA, userB, 0, 0, tcc.termination, dvo)
+                                    to_sec(tcc.duration), userA, userB, 0, 0, tcc.termination, dvo)
                         cdr_buffer.append(gdp)
                         call_reference = None
                     else:
@@ -155,7 +162,7 @@ def parseCDR(filename, version):
                 userB = Subscriber(1, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                 dvo = Dvo(False)
                 gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                            toc.duration, userA, userB, 0, Interfacez(out_g.out_int), toc.termination, dvo)
+                            to_sec(toc.duration), userA, userB, 0, Interfacez(out_g.out_int), toc.termination, dvo)
                 cdr_buffer.append(gdp)
                 call_reference = None
             if event.body.type == Tetra.Types.in_g:
@@ -169,8 +176,8 @@ def parseCDR(filename, version):
                     userA = Subscriber(1, bcd_to_str(in_g.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     userB = Subscriber(0, bcd_to_str(in_g.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
-                    gdp = Gcdr(bcd_to_str(in_g.dxt_id), '23', bcd_to_time(in_g.setup_time), in_g.duration, userA, userB,
-                                Interfacez(in_g.inc_int), 0, in_g.termination, dvo)
+                    gdp = Gcdr(bcd_to_str(in_g.dxt_id), '23', bcd_to_time(in_g.setup_time), to_sec(in_g.duration),
+                               userA, userB, Interfacez(in_g.inc_int), 0, in_g.termination, dvo)
                     cdr_buffer.append(gdp)
                     call_reference = None
                 else:
@@ -200,6 +207,7 @@ def parseCDR(filename, version):
             wr = csv.writer(csv_file, delimiter=',')
             for cdr in cdr_buffer:
                 wr.writerow(list(cdr))
+
 
 if __name__ == '__main__':
     parseCDR()
