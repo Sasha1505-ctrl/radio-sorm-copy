@@ -2,6 +2,20 @@ import re
 from dataclasses import dataclass
 from kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime
+from enum import Enum, unique
+
+@unique
+class UserType(Enum):
+    inner = 1
+    outer = 2
+
+@unique
+class CallType(Enum):
+    toc = 1
+    toctcc = 2
+    tocoutg = 3
+    ing = 4
+    ingtcc = 5
 
 @dataclass
 class Subscriber:
@@ -13,7 +27,7 @@ class Subscriber:
     end_location: номер БС в конце разговора (для внутренних абонентов)
     """
 
-    stype: int
+    stype: UserType
     number: str
     start_location: int
     end_location: int
@@ -22,9 +36,9 @@ class Subscriber:
         return re.sub(r'[f]+', '', self.number)
 
     def getType(self) -> str:
-        if re.search(r'(10|e)(20250075)(78)?\d{3,4}', self.number):
+        if re.search(r'(10|e)(20250075)(78)?\d{3,4}', self.number) and self.stype is UserType.inner:
             return 'RADIO'
-        elif re.search(r'(67)[2]?\d{5}', self.number):
+        elif re.search(r'(67)[2]?\d{5}', self.number) and self.stype is UserType.outer:
             return 'VSS'
         else:
             return 'UNKNOWN'
@@ -86,7 +100,7 @@ class Gcdr:
     if_out: Interfacez
     call_termination: Tetra.Terminations
     dvo: Dvo
-    call_type: int = 1
+    call_type: CallType
 
     @property
     def get_dxt_id(self):

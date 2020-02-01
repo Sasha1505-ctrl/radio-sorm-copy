@@ -5,7 +5,7 @@ from typing import Optional, List
 from collections import deque
 import click
 import csv
-from cdr import Gcdr, Subscriber, Dvo, Interfacez
+from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType
 
 UNDEFINED_LOCATION: str = '65535'
 
@@ -102,11 +102,11 @@ def parseCDR(filename, version):
                     if event.body.call_reference == 0:
                         # Звонок не состоялся. Строим GCDR и сохраняем в CSV
                         toc = event.body
-                        userA = Subscriber(0, bcd_to_str(toc.served_number), toc.location, toc.location)
-                        userB = Subscriber(0, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
+                        userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
+                        userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         dvo = Dvo(False)
                         gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                                    to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo)
+                                    to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo, CallType.toc)
                         cdr_buffer.append(gdp)
                         call_reference = None
                     else:
@@ -116,11 +116,11 @@ def parseCDR(filename, version):
                 else:
                     # Обработка группового вызова. Строим GCDR и сохраняем его в CSV
                     toc = event.body
-                    userA = Subscriber(0, bcd_to_str(toc.served_number), toc.location, toc.location)
-                    userB = Subscriber(0, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
+                    userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
+                    userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                                to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo)
+                                to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo, CallType.toc)
                     cdr_buffer.append(gdp)
                     call_reference = None
             if event.body.type == Tetra.Types.tcc:
@@ -134,17 +134,17 @@ def parseCDR(filename, version):
                     tcc = event.body
                     dvo = Dvo(False)
                     if type(partial_cdr) is Tetra.Toc:
-                        userA = Subscriber(0, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
-                        userB = Subscriber(0, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
+                        userA = Subscriber(UserType.inner, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
+                        userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
                         gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time),
-                                   to_sec(partial_cdr.duration), userA, userB, 0, 0, partial_cdr.termination, dvo)
+                                   to_sec(partial_cdr.duration), userA, userB, 0, 0, partial_cdr.termination, dvo, CallType.toctcc)
                         call_reference = None
                         cdr_buffer.append(gdp)
                     elif type(partial_cdr) is Tetra.InG:
-                        userA = Subscriber(1, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
-                        userB = Subscriber(0, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
+                        userA = Subscriber(UserType.outer, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
+                        userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
                         gdp = Gcdr(bcd_to_str(tcc.dxt_id), '23', bcd_to_time(tcc.setup_time),
-                                    to_sec(tcc.duration), userA, userB, 0, 0, tcc.termination, dvo)
+                                    to_sec(tcc.duration), userA, userB, 0, 0, tcc.termination, dvo, CallType.ingtcc)
                         cdr_buffer.append(gdp)
                         call_reference = None
                     else:
@@ -158,11 +158,11 @@ def parseCDR(filename, version):
                 pprint(f'OutG: {event.body.seq_num} cr: {call_reference}')
                 toc: Tetra.Toc = callStack.pop()
                 out_g: Tetra.OutG = event.body
-                userA = Subscriber(0, bcd_to_str(toc.served_number), toc.location, toc.location)
-                userB = Subscriber(1, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
+                userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
+                userB = Subscriber(UserType.outer, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                 dvo = Dvo(False)
                 gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
-                            to_sec(toc.duration), userA, userB, 0, Interfacez(out_g.out_int), toc.termination, dvo)
+                            to_sec(toc.duration), userA, userB, 0, Interfacez(out_g.out_int), toc.termination, dvo, CallType.tocoutg)
                 cdr_buffer.append(gdp)
                 call_reference = None
             if event.body.type == Tetra.Types.in_g:
@@ -177,7 +177,7 @@ def parseCDR(filename, version):
                     userB = Subscriber(0, bcd_to_str(in_g.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(in_g.dxt_id), '23', bcd_to_time(in_g.setup_time), to_sec(in_g.duration),
-                               userA, userB, Interfacez(in_g.inc_int), 0, in_g.termination, dvo)
+                               userA, userB, Interfacez(in_g.inc_int), 0, in_g.termination, dvo, CallType.ing)
                     cdr_buffer.append(gdp)
                     call_reference = None
                 else:
