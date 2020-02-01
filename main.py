@@ -7,7 +7,7 @@ import click
 import csv
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType
 
-UNDEFINED_LOCATION: str = '65535'
+UNDEFINED_LOCATION: int = 65535
 
 def bcdDigits(chars):
     for char in chars:
@@ -36,6 +36,7 @@ def to_sec(dec_msec: int) -> int:
     dec_msec: unit is 10 milliseconds
     """
     return round(dec_msec/100)
+
 
 @click.command()
 @click.argument('filename', type=click.Path(exists=True))
@@ -73,7 +74,7 @@ def parseCDR(filename, version):
         #         dict(
         #             id=event.body.seq_num,
         #             served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
-    #             location=event.body.location,
+        #             location=event.body.location,
         #             prev_location=event.body.prev_location,
         #             reg_at=datetime(
         #                 tetra_time.full_year,
@@ -87,7 +88,7 @@ def parseCDR(filename, version):
         #         for event in blk.events.event if event.body.type == Tetra.Types.reg
         #     ]
         # )
-        callStack = deque()
+        call_stack = deque()
         reg_buffer: List[Tetra.Reg] = []
         cdr_buffer: List[Gcdr] = []
         call_reference: Optional[int] = None
@@ -105,13 +106,13 @@ def parseCDR(filename, version):
                         userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
                         userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         dvo = Dvo(False)
-                        gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
+                        gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
                                     to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo, CallType.toc)
                         cdr_buffer.append(gdp)
                         call_reference = None
                     else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG
-                        callStack.append(event.body)
+                        call_stack.append(event.body)
                         call_reference = event.body.call_reference
                 else:
                     # Обработка группового вызова. Строим GCDR и сохраняем его в CSV
@@ -119,7 +120,7 @@ def parseCDR(filename, version):
                     userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
                     userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
-                    gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
+                    gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
                                 to_sec(toc.duration), userA, userB, 0, 0, toc.termination, dvo, CallType.toc)
                     cdr_buffer.append(gdp)
                     call_reference = None
@@ -128,7 +129,7 @@ def parseCDR(filename, version):
                 if call_reference is None:
                     raise ValueError(f'Не обработана запис TOC или InG для звонка {call_reference}')
                 pprint(f'TCC: {event.body.seq_num} cr: {call_reference}')
-                partial_cdr = callStack.pop()
+                partial_cdr = call_stack.pop()
                 if partial_cdr.call_reference == event.body.call_reference:
                     """Все совпало. Будем собирать Gcdr"""
                     tcc = event.body
@@ -136,14 +137,14 @@ def parseCDR(filename, version):
                     if type(partial_cdr) is Tetra.Toc:
                         userA = Subscriber(UserType.inner, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
                         userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
-                        gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), '23', bcd_to_time(partial_cdr.setup_time),
+                        gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), 23, bcd_to_time(partial_cdr.setup_time),
                                    to_sec(partial_cdr.duration), userA, userB, 0, 0, partial_cdr.termination, dvo, CallType.toctcc)
                         call_reference = None
                         cdr_buffer.append(gdp)
                     elif type(partial_cdr) is Tetra.InG:
                         userA = Subscriber(UserType.outer, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
-                        gdp = Gcdr(bcd_to_str(tcc.dxt_id), '23', bcd_to_time(tcc.setup_time),
+                        gdp = Gcdr(bcd_to_str(tcc.dxt_id), 23, bcd_to_time(tcc.setup_time),
                                     to_sec(tcc.duration), userA, userB, 0, 0, tcc.termination, dvo, CallType.ingtcc)
                         cdr_buffer.append(gdp)
                         call_reference = None
@@ -156,12 +157,12 @@ def parseCDR(filename, version):
                 if call_reference is None:
                     raise ValueError(f'Не обработана запись TOC для звонка {call_reference}')
                 pprint(f'OutG: {event.body.seq_num} cr: {call_reference}')
-                toc: Tetra.Toc = callStack.pop()
+                toc: Tetra.Toc = call_stack.pop()
                 out_g: Tetra.OutG = event.body
                 userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
                 userB = Subscriber(UserType.outer, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                 dvo = Dvo(False)
-                gdp = Gcdr(bcd_to_str(toc.dxt_id), '23', bcd_to_time(toc.setup_time),
+                gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
                             to_sec(toc.duration), userA, userB, 0, Interfacez(out_g.out_int), toc.termination, dvo, CallType.tocoutg)
                 cdr_buffer.append(gdp)
                 call_reference = None
@@ -173,16 +174,16 @@ def parseCDR(filename, version):
                 if event.body.call_reference == 0:
                     # Звонок не состоялся. Строим GCDR и сохраняем его в CSV
                     in_g: Tetra.InG = event.body
-                    userA = Subscriber(1, bcd_to_str(in_g.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
-                    userB = Subscriber(0, bcd_to_str(in_g.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
+                    userA = Subscriber(UserType.outer, bcd_to_str(in_g.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
+                    userB = Subscriber(UserType.inner, bcd_to_str(in_g.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
-                    gdp = Gcdr(bcd_to_str(in_g.dxt_id), '23', bcd_to_time(in_g.setup_time), to_sec(in_g.duration),
+                    gdp = Gcdr(bcd_to_str(in_g.dxt_id), 23, bcd_to_time(in_g.setup_time), to_sec(in_g.duration),
                                userA, userB, Interfacez(in_g.inc_int), 0, in_g.termination, dvo, CallType.ing)
                     cdr_buffer.append(gdp)
                     call_reference = None
                 else:
                     # Продолжаем обрабатывать звонок
-                    callStack.append(event.body)
+                    call_stack.append(event.body)
                     call_reference = event.body.call_reference
 
             if event.body.type == Tetra.Types.reg:
