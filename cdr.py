@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime
 from enum import Enum, unique
+from typing import Optional
 
 @unique
 class UserType(Enum):
@@ -71,7 +72,7 @@ class Dvo:
     switch: bool
     call_forvarding: str = '--'
     edge_dxt_id: str = '--'
-    rouming_dxt_id = '--'
+    rouming_dxt_id: str = '--'
 
 @dataclass
 class Gcdr:
@@ -96,8 +97,8 @@ class Gcdr:
     call_duration: int
     abon_a: Subscriber
     abon_b: Subscriber
-    if_in: Interfacez
-    if_out: Interfacez
+    if_in: Optional[Interfacez]
+    if_out: Optional[Interfacez]
     call_termination: Tetra.Terminations
     dvo: Dvo
     call_type: CallType
