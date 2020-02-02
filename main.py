@@ -5,9 +5,11 @@ from typing import List
 from collections import deque
 import click
 import csv
+import logging
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType
 
 UNDEFINED_LOCATION: int = 65535
+LOG = None  # initialized in init_logging
 
 def bcdDigits(chars):
     for char in chars:
@@ -37,6 +39,28 @@ def to_sec(dec_msec: int) -> int:
     """
     return round(dec_msec/100)
 
+def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
+    """Set up logging to file and console."""
+    if log_file is not None:
+        if append:
+            filemode_val = 'a'
+        else:
+            filemode_val = 'w'
+        logging.basicConfig(level=logging.DEBUG,
+                            format="%(asctime)s %(levelname)s %(threadName)s %(name)s %(message)s",
+                            # datefmt='%m-%d %H:%M',
+                            filename=log_file,
+                            filemode=filemode_val)
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(console_loglevel)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter("%(message)s")
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    global LOG
+    LOG = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('filename', type=click.Path(exists=True))
@@ -66,37 +90,19 @@ def parseCDR(filename, version):
 
     target = Tetra.from_file(filename)
 
+    call_stack = deque()
+    reg_buffer: List[Tetra.Reg] = []
+    cdr_buffer: List[Gcdr] = []
     conn = engine.connect()
+
     for blk in target.block:
-        # conn.execute(
-        #     regs.insert(),
-        #     [
-        #         dict(
-        #             id=event.body.seq_num,
-        #             served_nitsi="".join([hex(i)[2:] for i in event.body.served_nitsi]),
-        #             location=event.body.location,
-        #             prev_location=event.body.prev_location,
-        #             reg_at=datetime(
-        #                 tetra_time.full_year,
-        #                 tetra_time.month.as_int,
-        #                 tetra_time.day.as_int,
-        #                 tetra_time.hour.as_int,
-        #                 tetra_time.min.as_int,
-        #                 tetra_time.sec.as_int,
-        #                 tetra_time.msec.as_int),
-        #             )
-        #         for event in blk.events.event if event.body.type == Tetra.Types.reg
-        #     ]
-        # )
-        call_stack = deque()
-        reg_buffer: List[Tetra.Reg] = []
-        cdr_buffer: List[Gcdr] = []
+        LOG.info('Starting new block in CDR file')
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
                 if len(call_stack) != 0:
                    raise ValueError(f'Неожиданное вхождение записи TCC. Обработка звонка {event.body.call_reference} завершена не корректно.')
-                pprint(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
+                LOG.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
@@ -124,7 +130,7 @@ def parseCDR(filename, version):
                 """ Обработка запси терминации вызова TCC """
                 if len(call_stack) == 0:
                     raise ValueError(f'Не обработана запис TOC или InG для звонка {event.body.call_reference}')
-                pprint(f'TCC: {event.body.seq_num} cr: {event.body.call_reference}')
+                LOG.debug(f'TCC: {event.body.seq_num} cr: {event.body.call_reference}')
                 partial_cdr = call_stack.pop()
                 if partial_cdr.call_reference == event.body.call_reference:
                     """Все совпало. Будем собирать Gcdr"""
@@ -150,7 +156,7 @@ def parseCDR(filename, version):
                 """ Обработка записи звонка исходящего на фиксированную сеть TOC -> OutG"""
                 if len(call_stack) == 0:
                     raise ValueError(f'Не обработана запись TOC для звонка {event.body.call_reference}')
-                pprint(f'OutG: {event.body.seq_num} cr: {event.body.call_reference}')
+                LOG.debug(f'OutG: {event.body.seq_num} cr: {event.body.call_reference}')
                 toc: Tetra.Toc = call_stack.pop()
                 out_g: Tetra.OutG = event.body
                 userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
@@ -161,9 +167,9 @@ def parseCDR(filename, version):
                 cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.in_g:
                 """ Обработка записи звонка пришедшего из внешней сети """
-                pprint(f'InG: {event.body.seq_num} cr: {event.body.call_reference}')
                 if len(call_stack) != 0:
                     raise ValueError(f'Неожиданное вхождение записи IN_G. Обработка звонка {event.body.call_reference} завершена не корректно.')
+                LOG.debug(f'InG: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.call_reference == 0:
                     # Звонок не состоялся. Строим GCDR и сохраняем его в CSV
                     in_g: Tetra.InG = event.body
@@ -179,6 +185,7 @@ def parseCDR(filename, version):
 
             if event.body.type == Tetra.Types.reg:
                 """ Обработка записи о регистрации абонента """
+                LOG.debug(f'REG: {event.body.seq_num} SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)} LOCATION: {event.body.location}:{event.body.prev_location}')
                 reg_buffer.append(
                     dict(
                         id = event.body.seq_num,
@@ -188,18 +195,28 @@ def parseCDR(filename, version):
                         reg_at = bcd_to_time(event.body.timestamp),
                     )
                 )
+        LOG.info(f'End reading block. Calls quantity: {len(cdr_buffer)}. Regs quantity: {len(reg_buffer)}')
         # Write REG records to BD
         if len(reg_buffer) > 0:
             conn.execute(regs.insert(), reg_buffer)
             reg_buffer.clear()
 
-        # Write gcdrs to file
-        pprint(f'len is: {len(cdr_buffer)} \n {cdr_buffer}')
-        with open('out.csv', 'a', newline='') as csv_file:
-            wr = csv.writer(csv_file, delimiter=',')
-            for cdr in cdr_buffer:
-                wr.writerow(list(cdr))
+    # Write gcdrs to file
+    with open('out.csv', 'a', newline='') as csv_file:
+        wr = csv.writer(csv_file, delimiter=',')
+        for cdr in cdr_buffer:
+            wr.writerow(list(cdr))
+
+def main():
+    # append log files if DEBUG is set (from top of file)
+    init_logging('test.log', True)
+
+    global LOG
+    LOG = logging.getLogger(__name__)
+    LOG.info('Hello world!')
 
 
 if __name__ == '__main__':
+
+    main()
     parseCDR()
