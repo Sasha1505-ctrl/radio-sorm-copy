@@ -62,10 +62,7 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     global LOG
     LOG = logging.getLogger(__name__)
 
-@click.command()
-@click.argument('filename', type=click.Path(exists=True))
-@click.option('--version', default=7, help='version of Tetra software 5 or 7')
-def parseCDR(filename, version):
+def parseCDR(filename, version) -> List[Gcdr]:
 
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
@@ -200,14 +197,20 @@ def parseCDR(filename, version):
         if len(reg_buffer) > 0:
             conn.execute(regs.insert(), reg_buffer)
             reg_buffer.clear()
+    return cdr_buffer
 
+
+def write_to_csv(cdr_buffer: List[Gcdr], file: str):
     # Write gcdrs to file
-    with open('out.csv', 'a', newline='') as csv_file:
+    with open(file, 'a', newline='') as csv_file:
         wr = csv.writer(csv_file, delimiter=',')
         for cdr in cdr_buffer:
             wr.writerow(list(cdr))
 
-def main():
+@click.command()
+@click.argument('filename', type=click.Path(exists=True))
+@click.option('--version', default=7, help='version of Tetra software 5 or 7')
+def main(filename, version):
     # append log files if DEBUG is set (from top of file)
     init_logging('test.log', True)
 
@@ -215,8 +218,9 @@ def main():
     LOG = logging.getLogger(__name__)
     LOG.info('Hello world!')
 
+    cdr_buffer: List[Gcdr] = parseCDR(filename, version)
+    write_to_csv(cdr_buffer, 'hello.log')
 
 if __name__ == '__main__':
-
     main()
-    parseCDR()
+
