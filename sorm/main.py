@@ -120,14 +120,14 @@ def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
                     tcc = event.body
                     dvo = Dvo(False)
                     if type(partial_cdr) is Tetra.Toc:
-                        userA = Subscriber(UserType.inner, bcd_to_str(partial_cdr.served_number), partial_cdr.location, partial_cdr.location)
-                        userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_number), tcc.location, tcc.location)
+                        userA = Subscriber(UserType.inner, bcd_to_str(partial_cdr.served_number), partial_cdr.location, UNDEFINED_LOCATION)
+                        userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_number), tcc.location, UNDEFINED_LOCATION)
                         gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), 23, bcd_to_time(partial_cdr.setup_time),
                                    to_sec(partial_cdr.duration), userA, userB, None, None, partial_cdr.termination, dvo, CallType.toctcc)
                         cdr_buffer.append(gdp)
                     elif type(partial_cdr) is Tetra.InG:
                         userA = Subscriber(UserType.outer, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
-                        userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
+                        userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_nitsi), tcc.location, UNDEFINED_LOCATION)
                         gdp = Gcdr(bcd_to_str(tcc.dxt_id), 23, bcd_to_time(tcc.setup_time),
                                    to_sec(tcc.duration), userA, userB, None, None, tcc.termination, dvo, CallType.ingtcc)
                         cdr_buffer.append(gdp)
@@ -142,7 +142,7 @@ def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
                 LOG.debug(f'OutG: {event.body.seq_num} cr: {event.body.call_reference}')
                 toc: Tetra.Toc = call_stack.pop()
                 out_g: Tetra.OutG = event.body
-                userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
+                userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, UNDEFINED_LOCATION)
                 userB = Subscriber(UserType.outer, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                 dvo = Dvo(False)
                 gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
