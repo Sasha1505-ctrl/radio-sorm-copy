@@ -1,43 +1,46 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
-from pprint import pprint
 from typing import List
 from collections import deque
 import click
 import csv
 import logging
-from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType
+from sorm.cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
+from sqlalchemy import create_engine
+from configparser import ConfigParser, ExtendedInterpolation
+from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData, PrimaryKeyConstraint
+
+from sorm.utility import bcd_to_str, bcd_to_time, to_sec
 
 UNDEFINED_LOCATION: int = 65535
 LOG = None  # initialized in init_logging
 
-def bcdDigits(chars):
-    for char in chars:
-        char = ord(char)
-        for val in (char >> 4, char & 0xF):
-            if val == 0xF:
-                return
-            yield val
 
-def bcd_to_str(arr: bytearray) -> str:
-    return "".join([hex(i)[2:] for i in arr])
+@click.command()
+@click.argument('filename', type=click.Path(exists=True))
+@click.option('--ptus',
+              type=click.Choice(['SK', 'SV', 'VV', 'PO', 'PI'], case_sensitive=False))
+def main(filename, ptus):
 
-def bcd_to_time(tetra_time) -> datetime:
-        return datetime(
-            tetra_time.full_year,
-            tetra_time.month.as_int,
-            tetra_time.day.as_int,
-            tetra_time.hour.as_int,
-            tetra_time.min.as_int,
-            tetra_time.sec.as_int,
-            tetra_time.msec.as_int
-        )
-def to_sec(dec_msec: int) -> int:
-    """
-    Convert 10 msec unit from Tetra CDR to sec
-    dec_msec: unit is 10 milliseconds
-    """
-    return round(dec_msec/100)
+    config = ConfigParser(interpolation=ExtendedInterpolation())
+    config.read('test.properties')
+
+    data_out = config.get(ptus, 'result')
+    log_file = config.get(ptus, 'log')
+    # sqlite_file = config.get(ptus, 'db')
+    tetra_version = config.get(ptus, 'version')
+
+    # append log files if DEBUG is set (from top of file)
+    init_logging(log_file, True)
+
+    global LOG
+    LOG = logging.getLogger(__name__)
+    LOG.info('Hello world!')
+
+    # conn = init_db(sqlite_file)
+
+    cdr_buffer: List[Gcdr] = cdr_parser(filename, tetra_version)
+    write_to_csv(cdr_buffer, f'{data_out}/{filename}')
+
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     """Set up logging to file and console."""
@@ -62,35 +65,18 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     global LOG
     LOG = logging.getLogger(__name__)
 
-def parseCDR(filename, version) -> List[Gcdr]:
+def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
 
     if version == 5:
-        from kaitai.parser.tetra_v5 import Tetra
+        from sorm.kaitai.parser.tetra_v5 import Tetra
     else:
-        from kaitai.parser.tetra_v7 import Tetra
-
-    from sqlalchemy import create_engine
-    engine = create_engine('sqlite:///test.db', echo=True)
-
-    from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData,    PrimaryKeyConstraint
-    metadata = MetaData()
-    regs = Table(
-            'regs', metadata,
-            Column('id', Integer, primary_key=True),
-            Column('served_nitsi', String(12)),
-            Column('location', Integer),
-            Column('prev_location', Integer),
-            Column('reg_at', DateTime),
-            PrimaryKeyConstraint('id', 'served_nitsi', name='reg_pk')
-            )
-    metadata.create_all(engine)
+        from sorm.kaitai.parser import Tetra
 
     target = Tetra.from_file(filename)
 
     call_stack = deque()
     reg_buffer: List[Tetra.Reg] = []
     cdr_buffer: List[Gcdr] = []
-    conn = engine.connect()
 
     for blk in target.block:
         LOG.info('Starting new block in CDR file')
@@ -109,7 +95,7 @@ def parseCDR(filename, version) -> List[Gcdr]:
                         userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         dvo = Dvo(False)
                         gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
-                                    to_sec(toc.duration), userA, userB, None, None, toc.termination, dvo, CallType.toc)
+                                   to_sec(toc.duration), userA, userB, None, None, toc.termination, dvo, CallType.toc)
                         cdr_buffer.append(gdp)
                     else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG
@@ -121,7 +107,7 @@ def parseCDR(filename, version) -> List[Gcdr]:
                     userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
-                                to_sec(toc.duration), userA, userB, None, None, toc.termination, dvo, CallType.toc)
+                               to_sec(toc.duration), userA, userB, None, None, toc.termination, dvo, CallType.toc)
                     cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
@@ -143,7 +129,7 @@ def parseCDR(filename, version) -> List[Gcdr]:
                         userA = Subscriber(UserType.outer, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_nitsi), tcc.location, tcc.location)
                         gdp = Gcdr(bcd_to_str(tcc.dxt_id), 23, bcd_to_time(tcc.setup_time),
-                                    to_sec(tcc.duration), userA, userB, None, None, tcc.termination, dvo, CallType.ingtcc)
+                                   to_sec(tcc.duration), userA, userB, None, None, tcc.termination, dvo, CallType.ingtcc)
                         cdr_buffer.append(gdp)
                     else:
                         raise ValueError(f'Неожиданный тип объекта {type(partial_cdr)}')
@@ -160,7 +146,7 @@ def parseCDR(filename, version) -> List[Gcdr]:
                 userB = Subscriber(UserType.outer, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                 dvo = Dvo(False)
                 gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
-                            to_sec(toc.duration), userA, userB, None, Interfacez(out_g.out_int), toc.termination, dvo, CallType.tocoutg)
+                           to_sec(toc.duration), userA, userB, None, Interfacez(out_g.out_int), toc.termination, dvo, CallType.tocoutg)
                 cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.in_g:
                 """ Обработка записи звонка пришедшего из внешней сети """
@@ -183,21 +169,32 @@ def parseCDR(filename, version) -> List[Gcdr]:
             if event.body.type == Tetra.Types.reg:
                 """ Обработка записи о регистрации абонента """
                 LOG.debug(f'REG: {event.body.seq_num} SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)} LOCATION: {event.body.location}:{event.body.prev_location}')
-                reg_buffer.append(
-                    dict(
-                        id = event.body.seq_num,
-                        served_nitsi = bcd_to_str(event.body.served_nitsi),
-                        location = event.body.location,
-                        prev_location = event.body.prev_location,
-                        reg_at = bcd_to_time(event.body.timestamp),
-                    )
-                )
+                reg_buffer.append(Reg(event.body))
         LOG.info(f'End reading block. Calls quantity: {len(cdr_buffer)}. Regs quantity: {len(reg_buffer)}')
         # Write REG records to BD
-        if len(reg_buffer) > 0:
-            conn.execute(regs.insert(), reg_buffer)
-            reg_buffer.clear()
-    return cdr_buffer
+        #if len(reg_buffer) > 0:
+        #   conn.execute(REGS_TABLE.insert(), reg_buffer)
+        #   reg_buffer.clear()
+    return cdr_buffer, reg_buffer
+
+
+def init_db(path):
+    engine = create_engine(f'sqlite:///{path}', echo=True)
+    metadata = MetaData()
+
+    regs_table = Table(
+        'regs', metadata,
+        Column('id', Integer, primary_key=True),
+        Column('served_nitsi', String(12)),
+        Column('location', Integer),
+        Column('prev_location', Integer),
+        Column('reg_at', DateTime),
+        PrimaryKeyConstraint('id', 'served_nitsi', name='reg_pk')
+    )
+
+    metadata.create_all(engine)
+    conn = engine.connect()
+    return conn, regs_table
 
 
 def write_to_csv(cdr_buffer: List[Gcdr], file: str):
@@ -207,19 +204,6 @@ def write_to_csv(cdr_buffer: List[Gcdr], file: str):
         for cdr in cdr_buffer:
             wr.writerow(list(cdr))
 
-@click.command()
-@click.argument('filename', type=click.Path(exists=True))
-@click.option('--version', default=7, help='version of Tetra software 5 or 7')
-def main(filename, version):
-    # append log files if DEBUG is set (from top of file)
-    init_logging('test.log', True)
-
-    global LOG
-    LOG = logging.getLogger(__name__)
-    LOG.info('Hello world!')
-
-    cdr_buffer: List[Gcdr] = parseCDR(filename, version)
-    write_to_csv(cdr_buffer, 'hello.log')
 
 if __name__ == '__main__':
     main()
