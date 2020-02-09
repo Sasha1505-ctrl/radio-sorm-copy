@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import List
-from collections import deque
+from typing import List, Tuple, Dict, Any, DefaultDict
+from collections import deque, defaultdict
 import click
 import csv
 import logging
@@ -8,6 +8,7 @@ from sorm.cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
 from sqlalchemy import create_engine
 from configparser import ConfigParser, ExtendedInterpolation
 from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData, PrimaryKeyConstraint
+from pprint import pprint
 
 from sorm.utility import bcd_to_str, bcd_to_time, to_sec
 
@@ -38,9 +39,15 @@ def main(filename, ptus):
 
     # conn = init_db(sqlite_file)
 
-    cdr_buffer: List[Gcdr] = cdr_parser(filename, tetra_version)
-    write_to_csv(cdr_buffer, f'{data_out}/{filename}')
+    out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(filename, tetra_version)
+    for reg in out_buffers[1]:
+        print(reg)
+    # write_to_csv(cdr_buffer, f'{data_out}/{filename}')
 
+def get_last_location() -> List[Gcdr]:
+    """
+    Функция определяет местоположение абонента на момент завершения разговора
+    """
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     """Set up logging to file and console."""
@@ -75,7 +82,7 @@ def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
     target = Tetra.from_file(filename)
 
     call_stack = deque()
-    reg_buffer: List[Tetra.Reg] = []
+    reg_buffer: DefaultDict[str, List[Reg]] = defaultdict(list)
     cdr_buffer: List[Gcdr] = []
 
     for blk in target.block:
@@ -169,9 +176,12 @@ def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
             if event.body.type == Tetra.Types.reg:
                 """ Обработка записи о регистрации абонента """
                 LOG.debug(f'REG: {event.body.seq_num} SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)} LOCATION: {event.body.location}:{event.body.prev_location}')
-                reg_buffer.append(Reg(event.body))
+                reg = Reg(event.body)
+                reg_buffer[reg.get_number()].append(reg)
+                # reg_buffer[reg.get_number()].append(reg)
         LOG.info(f'End reading block. Calls quantity: {len(cdr_buffer)}. Regs quantity: {len(reg_buffer)}')
-        # Write REG records to BD
+        # Write REG records to BD`:w
+
         #if len(reg_buffer) > 0:
         #   conn.execute(REGS_TABLE.insert(), reg_buffer)
         #   reg_buffer.clear()

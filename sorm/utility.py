@@ -2,7 +2,7 @@ from datetime import datetime
 
 
 def bcd_to_str(arr: bytearray) -> str:
-    return "".join([hex(i)[2:] for i in arr])
+    return ''.join([hex(i)[2:] for i in arr])
 
 
 def bcd_to_time(tetra_time) -> datetime:

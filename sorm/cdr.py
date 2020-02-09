@@ -68,10 +68,18 @@ class Reg:
     """
     def __init__(self, reg: Tetra.Reg):
         self._id = reg.seq_num,
-        self._served_nitsi = bcd_to_str(reg.served_nitsi),
+        self._nitsi = bcd_to_str(reg.served_nitsi),
         self._location = reg.location,
         self._prev_location = reg.prev_location,
         self._reg_at = bcd_to_time(reg.timestamp),
+
+
+    def get_number(self) -> str:
+        return re.sub(r'[f]+','', str(self._nitsi))
+
+
+    def __str__(self):
+        return f'{self._reg_at}:{self.get_number()}'.format(self=self)
 
 @dataclass
 class Dvo:
