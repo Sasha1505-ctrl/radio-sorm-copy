@@ -4,13 +4,13 @@ from collections import deque, defaultdict
 import click
 import csv
 import logging
-from sorm.cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
+from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
 from sqlalchemy import create_engine
 from configparser import ConfigParser, ExtendedInterpolation
 from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData, PrimaryKeyConstraint
 from pprint import pprint
 
-from sorm.utility import bcd_to_str, bcd_to_time, to_sec
+from utility import bcd_to_str, bcd_to_time, to_sec
 
 UNDEFINED_LOCATION: int = 65535
 LOG = None  # initialized in init_logging
@@ -75,9 +75,9 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
 def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
 
     if version == 5:
-        from sorm.kaitai.parser.tetra_v5 import Tetra
+        from kaitai.parser.tetra_v5 import Tetra
     else:
-        from sorm.kaitai.parser import Tetra
+        from kaitai.parser.tetra_v7 import Tetra
 
     target = Tetra.from_file(filename)
 

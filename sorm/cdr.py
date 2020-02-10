@@ -1,11 +1,11 @@
 import re
 from dataclasses import dataclass
-from sorm.kaitai.parser import Tetra
+from kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime
 from enum import Enum, unique
 from typing import Optional
 
-from sorm.utility import bcd_to_str, bcd_to_time
+from utility import bcd_to_str, bcd_to_time
 
 
 @unique
