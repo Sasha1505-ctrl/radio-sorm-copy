@@ -40,8 +40,7 @@ def main(filename, ptus):
     # conn = init_db(sqlite_file)
 
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(filename, tetra_version)
-    for reg in out_buffers[1]:
-        print(reg)
+    pprint(out_buffers)
     # write_to_csv(cdr_buffer, f'{data_out}/{filename}')
 
 def get_last_location() -> List[Gcdr]:
@@ -178,14 +177,13 @@ def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
                 LOG.debug(f'REG: {event.body.seq_num} SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)} LOCATION: {event.body.location}:{event.body.prev_location}')
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
-                # reg_buffer[reg.get_number()].append(reg)
         LOG.info(f'End reading block. Calls quantity: {len(cdr_buffer)}. Regs quantity: {len(reg_buffer)}')
         # Write REG records to BD`:w
 
         #if len(reg_buffer) > 0:
         #   conn.execute(REGS_TABLE.insert(), reg_buffer)
         #   reg_buffer.clear()
-    return cdr_buffer, reg_buffer
+    return reg_buffer, cdr_buffer
 
 
 def init_db(path):

@@ -1,5 +1,3 @@
-from sorm.utility import to_sec
-
 
 def test_dec_to_sec():
     assert 1 == to_sec(100)

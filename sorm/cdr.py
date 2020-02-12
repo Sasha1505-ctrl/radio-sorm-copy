@@ -67,15 +67,15 @@ class Reg:
     Tetra Reg class wrapper
     """
     def __init__(self, reg: Tetra.Reg):
-        self._id = reg.seq_num,
-        self._nitsi = bcd_to_str(reg.served_nitsi),
-        self._location = reg.location,
-        self._prev_location = reg.prev_location,
-        self._reg_at = bcd_to_time(reg.timestamp),
+        self._id = reg.seq_num
+        self._nitsi = bcd_to_str(reg.served_nitsi)
+        self._location = reg.location
+        self._prev_location = reg.prev_location
+        self._reg_at = bcd_to_time(reg.timestamp)
 
 
     def get_number(self) -> str:
-        return re.sub(r'[f]+','', str(self._nitsi))
+        return re.sub(r'[f]+','', self._nitsi)
 
 
     def __str__(self):
