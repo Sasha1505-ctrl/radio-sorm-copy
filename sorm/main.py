@@ -12,6 +12,8 @@ from pprint import pprint
 
 from utility import bcd_to_str, bcd_to_time, to_sec
 
+from devtools import debug
+
 UNDEFINED_LOCATION: int = 65535
 LOG = None  # initialized in init_logging
 
