@@ -42,8 +42,24 @@ def main(filename, ptus):
     # conn = init_db(sqlite_file)
 
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(filename, tetra_version)
-    pprint(out_buffers)
     # write_to_csv(cdr_buffer, f'{data_out}/{filename}')
+    reg_buff, cdr_buff = out_buffers
+    for gcdr in cdr_buff:
+        if gcdr.abon_a.start_location != UNDEFINED_LOCATION and gcdr.abon_a.end_location == UNDEFINED_LOCATION:
+            pprint(f'Check rouming for user A {gcdr.abon_a.get_number()}')
+            # pprint(reg_buff.get(gcdr.abon_a.get_number())
+            if gcdr.call_duration > 60:
+                pprint('-- check reg_buffer')
+                lst = reg_buff.get(gcdr.abon_a()).sort()
+                end_of_call = timedelta(sec=gcdr.call_duration)
+                new_list = [reg for reg in lst if reg.]
+            else:
+                gcdr.abon_a.end_location = gcdr.abon_a.start_location
+        if gcdr.abon_b.start_location != UNDEFINED_LOCATION and gcdr.abon_b.end_location == UNDEFINED_LOCATION:
+            pprint(f'Check rouming for user B {gcdr.abon_b.get_number()}')
+            # pprint(reg_buff.get(gcdr.abon_b.get_number()) 
+            if gcdr.call_duration > 60:
+                pprint('-- check reg_buffer')
 
 def get_last_location() -> List[Gcdr]:
     """
