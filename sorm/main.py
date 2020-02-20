@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from configparser import ConfigParser, ExtendedInterpolation
 from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData, PrimaryKeyConstraint
 from pprint import pprint
+from datetime import timedelta
 
 from utility import bcd_to_str, bcd_to_time, to_sec
 
@@ -50,9 +51,10 @@ def main(filename, ptus):
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
             if gcdr.call_duration > 60:
                 pprint('-- check reg_buffer')
-                lst = reg_buff.get(gcdr.abon_a()).sort()
-                end_of_call = timedelta(sec=gcdr.call_duration)
-                new_list = [reg for reg in lst if reg.]
+                lst = reg_buff.get(gcdr.abon_a.get_number())
+                end_of_call = timedelta(seconds=gcdr.call_duration)
+                new_list = [reg for reg in lst if reg.reg_at > gcdr.date and reg.reg_at <= gcdr.date + end_of_call]
+                pprint(new_list)
             else:
                 gcdr.abon_a.end_location = gcdr.abon_a.start_location
         if gcdr.abon_b.start_location != UNDEFINED_LOCATION and gcdr.abon_b.end_location == UNDEFINED_LOCATION:

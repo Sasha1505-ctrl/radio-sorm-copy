@@ -77,6 +77,10 @@ class Reg:
     def get_number(self) -> str:
         return re.sub(r'[f]+','', self._nitsi)
 
+    @property
+    def reg_at(self) -> datetime:
+        return self._reg_at
+
 
     def __str__(self):
         return f'{self._reg_at}:{self.get_number()}'.format(self=self)
