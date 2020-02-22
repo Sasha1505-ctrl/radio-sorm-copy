@@ -1,8 +1,9 @@
 from datetime import datetime
+from binascii import b2a_hex
 
 
 def bcd_to_str(arr: bytearray) -> str:
-    return ''.join([hex(i)[2:] for i in arr])
+    return str(b2a_hex(arr), "utf-8")
 
 
 def bcd_to_time(tetra_time) -> datetime:
