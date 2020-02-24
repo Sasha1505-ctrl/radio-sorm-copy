@@ -63,10 +63,6 @@ def main(filename, ptus):
             if gcdr.call_duration > 60:
                 pprint('-- check reg_buffer')
 
-def get_last_location() -> List[Gcdr]:
-    """
-    Функция определяет местоположение абонента на момент завершения разговора
-    """
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     """Set up logging to file and console."""

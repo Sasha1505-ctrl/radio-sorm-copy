@@ -48,7 +48,30 @@ class Subscriber:
             return 'VSS'
         else:
             return 'UNKNOWN'
+    def get_last_location(self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta): -> str
+        """
+        Определяем местоположение аблнента
+        reg_buffer: Список регистраций абонентов в обрабатываемом файле
+        sd: Start DateTime время начала разговора
+        td: Длительность разговора
+        """
+        if self.UserType == UserType.inner:
+            pprint(f'Check rouming for user {self.get_number()}')
+            # pprint(reg_buff.get(gcdr.abon_a.get_number())
+            if td > 60:
+                pprint('-- check reg_buffer')
+                lst = reg_buff.get(self.get_number())
+                new_list = [reg for reg in lst if reg.reg_at > sd and reg.reg_at <= sd + td]
+                if size(new_list) != 0:
+                    pprint(f'Rouming occured {self._nitsi}')
+                    self.location = new_list[:-1].get_location
+                else:
+                    self.end_location = self.start_location
+                   
+            else:
+                self.end_location = self.start_location
 
+ 
     def __str__(self):
         return f'{self.get_number()}'.format(self)
 
@@ -77,9 +100,13 @@ class Reg:
     def get_number(self) -> str:
         return re.sub(r'[f]+','', self._nitsi)
 
-    @property
+   @property
     def reg_at(self) -> datetime:
         return self._reg_at
+    
+    @property
+    def get_location(self) -> str:
+        return self._location
 
 
     def __str__(self):
