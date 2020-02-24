@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from binascii import b2a_hex
 
 
@@ -18,9 +18,9 @@ def bcd_to_time(tetra_time) -> datetime:
         )
 
 
-def to_sec(dec_msec: int) -> int:
+def to_sec(dec_msec: int) -> timedelta:
     """
     Convert 10 msec unit from Tetra CDR to sec
     dec_msec: unit is 10 milliseconds
     """
-    return round(dec_msec/100)
+    return timedelta(seconds=round(dec_msec/100))

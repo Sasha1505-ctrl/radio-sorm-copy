@@ -43,26 +43,8 @@ def main(filename, ptus):
     # conn = init_db(sqlite_file)
 
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(filename, tetra_version)
-    # write_to_csv(cdr_buffer, f'{data_out}/{filename}')
     reg_buff, cdr_buff = out_buffers
-    for gcdr in cdr_buff:
-        if gcdr.abon_a.start_location != UNDEFINED_LOCATION and gcdr.abon_a.end_location == UNDEFINED_LOCATION:
-            pprint(f'Check rouming for user A {gcdr.abon_a.get_number()}')
-            # pprint(reg_buff.get(gcdr.abon_a.get_number())
-            if gcdr.call_duration > 60:
-                pprint('-- check reg_buffer')
-                lst = reg_buff.get(gcdr.abon_a.get_number())
-                end_of_call = timedelta(seconds=gcdr.call_duration)
-                new_list = [reg for reg in lst if reg.reg_at > gcdr.date and reg.reg_at <= gcdr.date + end_of_call]
-                pprint(new_list)
-            else:
-                gcdr.abon_a.end_location = gcdr.abon_a.start_location
-        if gcdr.abon_b.start_location != UNDEFINED_LOCATION and gcdr.abon_b.end_location == UNDEFINED_LOCATION:
-            pprint(f'Check rouming for user B {gcdr.abon_b.get_number()}')
-            # pprint(reg_buff.get(gcdr.abon_b.get_number()) 
-            if gcdr.call_duration > 60:
-                pprint('-- check reg_buffer')
-
+    write_to_csv(cdr_buff, f'{data_out}/{filename}')
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     """Set up logging to file and console."""
