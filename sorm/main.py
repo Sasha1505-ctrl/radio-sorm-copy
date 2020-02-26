@@ -43,8 +43,7 @@ def main(filename, ptus):
     # conn = init_db(sqlite_file)
 
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(filename, tetra_version)
-    reg_buff, cdr_buff = out_buffers
-    write_to_csv(cdr_buff, f'{data_out}/{filename}')
+    write_to_csv(out_buffers, f'{data_out}/{filename}')
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     """Set up logging to file and console."""
@@ -69,7 +68,7 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     global LOG
     LOG = logging.getLogger(__name__)
 
-def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
+def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
@@ -181,7 +180,7 @@ def cdr_parser(filename, version) -> (List[Gcdr], List[Reg]):
         #if len(reg_buffer) > 0:
         #   conn.execute(REGS_TABLE.insert(), reg_buffer)
         #   reg_buffer.clear()
-    return reg_buffer, cdr_buffer
+    return cdr_buffer, reg_buffer
 
 
 def init_db(path):
@@ -203,11 +202,14 @@ def init_db(path):
     return conn, regs_table
 
 
-def write_to_csv(cdr_buffer: List[Gcdr], file: str):
+def write_to_csv(out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]], file: str):
+    cdr_buff, reg_buff = out_buffers
     # Write gcdrs to file
     with open(file, 'a', newline='') as csv_file:
         wr = csv.writer(csv_file, delimiter=',')
-        for cdr in cdr_buffer:
+        for cdr in cdr_buff:
+            cdr.abon_a.get_last_location(reg_buff, cdr.date, cdr.call_duration)
+            cdr.abon_b.get_last_location(reg_buff, cdr.date, cdr.call_duration)
             wr.writerow(list(cdr))
 
 

@@ -74,17 +74,18 @@ class Subscriber:
             return 'VSS'
         else:
             return 'UNKNOWN'
-    def get_last_location(self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta) -> str:
+    def get_last_location(self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta):
         """
         Определяем местоположение аблнента
         reg_buffer: Список регистраций абонентов в обрабатываемом файле
         sd: Start DateTime время начала разговора
         td: Длительность разговора
         """
+        print(f'Abonent type is {self.type}')
         if self.stype == UserType.inner:
             print(f'Check rouming for user {self.get_number()}')
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
-            if td > 60:
+            if td > timedelta(minutes=1):
                 print('-- check reg_buffer')
                 lst = reg_buffer.get(self.get_number())
                 new_list = [reg for reg in lst if reg.reg_at > sd and reg.reg_at <= sd + td]
