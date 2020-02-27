@@ -175,7 +175,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
         LOG.info(f'End reading block. Calls quantity: {len(cdr_buffer)}. Regs quantity: {len(reg_buffer)}')
-        # Write REG records to BD`:w
+        # Write REG records to BD
 
         #if len(reg_buffer) > 0:
         #   conn.execute(REGS_TABLE.insert(), reg_buffer)
@@ -205,7 +205,7 @@ def init_db(path):
 def write_to_csv(out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]], file: str):
     cdr_buff, reg_buff = out_buffers
     # Write gcdrs to file
-    with open(file, 'a', newline='') as csv_file:
+    with open(file, 'w+', newline='') as csv_file:
         wr = csv.writer(csv_file, delimiter=',')
         for cdr in cdr_buff:
             cdr.abon_a.get_last_location(reg_buff, cdr.date, cdr.call_duration)

@@ -68,20 +68,22 @@ class Subscriber:
         return re.sub(r'[f]+', '', self.number)
 
     def get_type(self) -> str:
-        if re.search(r'(10|e)(20250075)(78)?\d{3,4}', self.number) and self.stype is UserType.inner:
+        if re.search(r'(10|e)(2025000075)(78)?\d{3,4}', self.number) and self.stype is UserType.inner:
             return 'RADIO'
-        elif re.search(r'(67)[2]?\d{5}', self.number) and self.stype is UserType.outer:
+        elif re.search(r'(6)[2]?(7)\d{5}', self.number) and self.stype is UserType.outer:
             return 'VSS'
         else:
             return 'UNKNOWN'
-    def get_last_location(self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta):
+   
+    def get_last_location(self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta) ->None:
+
         """
         Определяем местоположение аблнента
         reg_buffer: Список регистраций абонентов в обрабатываемом файле
         sd: Start DateTime время начала разговора
         td: Длительность разговора
         """
-        print(f'Abonent type is {self.type}')
+        print(f'Abonent type is {self.stype}')
         if self.stype == UserType.inner:
             print(f'Check rouming for user {self.get_number()}')
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
@@ -89,12 +91,11 @@ class Subscriber:
                 print('-- check reg_buffer')
                 lst = reg_buffer.get(self.get_number())
                 new_list = [reg for reg in lst if reg.reg_at > sd and reg.reg_at <= sd + td]
-                if size(new_list) != 0:
+                if len(new_list) != 0:
                     print(f'Rouming occured {self.number}')
-                    self.location = new_list[:-1].get_location
+                    self.location = new_list[-1].get_location
                 else:
                     self.end_location = self.start_location
-                   
             else:
                 self.end_location = self.start_location
 
