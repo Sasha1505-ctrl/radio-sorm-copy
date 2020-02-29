@@ -1,11 +1,11 @@
 import re
 from dataclasses import dataclass
-from kaitai.parser.tetra_v7 import Tetra
+from sorm.kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Optional, List, DefaultDict
 
-from utility import bcd_to_str, bcd_to_time
+from sorm.utility import bcd_to_str, bcd_to_time
 
 
 @unique
@@ -70,7 +70,7 @@ class Subscriber:
     def get_type(self) -> str:
         if re.search(r'(10|e)(2025000075)(78)?\d{3,4}', self.number) and self.stype is UserType.inner:
             return 'RADIO'
-        elif re.search(r'(6)[2]?(7)\d{5}', self.number) and self.stype is UserType.outer:
+        elif re.search(r'[6]?[2]?(7)\d{5}', self.number) and self.stype is UserType.outer:
             return 'VSS'
         else:
             return 'UNKNOWN'
