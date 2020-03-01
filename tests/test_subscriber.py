@@ -1,7 +1,7 @@
 import pytest
 from sorm.cdr import Subscriber, UserType
 
-@pytest.mark.parametrize("user,types", [('tetra_user', "RADIO"), ('vss_user', "VSS")])
+@pytest.mark.parametrize("user,types", [('tetra_user', UserType.inner), ('vss_user', UserType.outer)])
 def test_stuff(user, types, request):
     user_fixture = request.getfixturevalue(user)
     for tupl in user_fixture:

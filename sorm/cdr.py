@@ -12,6 +12,7 @@ from sorm.utility import bcd_to_str, bcd_to_time
 class UserType(Enum):
     inner = 1
     outer = 2
+    unknown = 9 
 
 
 @unique
@@ -21,6 +22,7 @@ class CallType(Enum):
     tocoutg = 3
     ing = 4
     ingtcc = 5
+
 class Reg:
     """
     Tetra Reg class wrapper
@@ -67,13 +69,14 @@ class Subscriber:
     def get_number(self):
         return re.sub(r'[f]+', '', self.number)
 
-    def get_type(self) -> str:
+    #  TODO: масло, маслянное. Думаю нужно переименвать в check_type и проверять при формировании записи.
+    def get_type(self) -> UserType:
         if re.search(r'(10|e)(2025000075)(78)?\d{3,4}', self.number) and self.stype is UserType.inner:
-            return 'RADIO'
+            return UserType.inner 
         elif re.search(r'[6]?[2]?(7)\d{5}', self.number) and self.stype is UserType.outer:
-            return 'VSS'
+            return UserType.outer
         else:
-            return 'UNKNOWN'
+            return UserType.unknown
    
     def get_last_location(self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta) ->None:
 
