@@ -84,6 +84,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
     for blk in target.block:
         LOG.info('Starting new block in CDR file')
         for event in blk.events.event:
+            print(event)
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
                 if len(call_stack) != 0:
