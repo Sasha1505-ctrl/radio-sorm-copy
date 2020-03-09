@@ -29,7 +29,8 @@ def main(filename, ptus):
     config.read('test.properties')
 
     data_out = config.get(ptus, 'result')
-    log_file = config.get(ptus, 'log')
+    log_path = config.get(ptus, 'log')
+    log_file = f'{log_path}{filename.split(".")[0]}.log'
     # sqlite_file = config.get(ptus, 'db')
     tetra_version = config.get(ptus, 'version')
 
@@ -38,7 +39,6 @@ def main(filename, ptus):
 
     global LOG
     LOG = logging.getLogger(__name__)
-    LOG.info('Hello world!')
 
     # conn = init_db(sqlite_file)
 
@@ -82,7 +82,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
     cdr_buffer: List[Gcdr] = []
 
     for blk in target.block:
-        LOG.info('Starting new block in CDR file')
+        LOG.info(f'Starting new block in CDR file {filename}')
         for event in blk.events.event:
             print(event)
             if event.body.type == Tetra.Types.toc:
