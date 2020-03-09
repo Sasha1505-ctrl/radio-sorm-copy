@@ -328,8 +328,19 @@ types:
         size: 125-2
   sds:
     seq:
+      - id: type
+        type: u1
+        enum: types
+      - id: version
+        type: u1
+      - id: dxt_id
+        type: u4
+      - id: checksum
+        type: u2
+      - id: seq_num
+        type: u2
       - id: body
-        size: 262-2
+        size: 262-2-1-1-4-4
   pd:
     seq:
       - id: body
@@ -443,10 +454,10 @@ enums:
     2: tcc
     3: in_g
     4: out_g
-    5: redirect
-    6: sms
+    5: sms
+    6: data
     7: farward
-    8: data
+    8: redirect
     9: reg
   unit_index_t:
     0: fnim0
