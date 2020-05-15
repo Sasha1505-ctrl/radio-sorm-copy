@@ -5,11 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Текущий файл",
+            "name": "Python: Current File",
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
-        }
+            "console": "integratedTerminal",
+            "args": ["CF0005.D00", "--ptus", "SK"]
+        },
     ]
 }

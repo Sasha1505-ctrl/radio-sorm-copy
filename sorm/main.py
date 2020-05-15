@@ -10,6 +10,7 @@ from configparser import ConfigParser, ExtendedInterpolation
 from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData, PrimaryKeyConstraint
 from pprint import pprint
 from datetime import timedelta
+from pathlib import Path
 
 from utility import bcd_to_str, bcd_to_time, to_sec
 
@@ -17,7 +18,7 @@ from devtools import debug
 
 UNDEFINED_LOCATION: int = 65535
 LOG = None  # initialized in init_logging
-
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 @click.command()
 @click.argument('filename', type=click.Path(exists=True))
@@ -26,11 +27,12 @@ LOG = None  # initialized in init_logging
 def main(filename, ptus):
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read('test.properties')
+    config.read(f'{BASE_DIR}/config.properties')
 
-    data_out = config.get(ptus, 'result')
-    log_file = config.get(ptus, 'log')
-    # sqlite_file = config.get(ptus, 'db')
+    data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
+    data_out.mkdir(parents=True, exist_ok=True)
+    log_file = BASE_DIR.joinpath(config.get(ptus, 'log'))
+    log_file.parent.mkdir(parents=True, exist_ok=True)
     tetra_version = config.get(ptus, 'version')
 
     # append log files if DEBUG is set (from top of file)
@@ -40,10 +42,8 @@ def main(filename, ptus):
     LOG = logging.getLogger(__name__)
     LOG.info('Hello world!')
 
-    # conn = init_db(sqlite_file)
-
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(filename, tetra_version)
-    write_to_csv(out_buffers, f'{data_out}/{filename}')
+    write_to_csv(out_buffers, f'{data_out}/{Path(filename).name}')
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     """Set up logging to file and console."""
