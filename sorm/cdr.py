@@ -116,7 +116,7 @@ class Interfacez:
         self._pui_type = interface.pui_type
         self._pui_index = interface.pui_index
     def __str__(self):
-        return f'Int: {self._ui}:{self._pui_type}{self._pui_index}'.format(self)
+        return f'Int: {self._ui.value}:{self._pui_type}{self._pui_index}'.format(self)
 @dataclass
 class Dvo:
     """

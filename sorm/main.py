@@ -11,6 +11,7 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData, Prima
 from pprint import pprint
 from datetime import timedelta
 from pathlib import Path
+from enum import Enum
 
 from utility import bcd_to_str, bcd_to_time, to_sec
 
@@ -81,11 +82,16 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
     reg_buffer: DefaultDict[str, List[Reg]] = defaultdict(list)
     cdr_buffer: List[Gcdr] = []
     
-    class Bunch(dict):
-        __getattr__, __setattr__ = dict.get, dict.__setitem__
+    class MockUi(Enum):
+        Inner=1
+    class MockInt():
+        def __init__(self):
+            self.ui= MockUi.Inner
+            self.pui_type=0
+            self.pui_index=0
+            
 
-
-    void_int = Interfacez(Bunch(dict(_ui=0, _pui_type=0, _pui_index=0)))
+    void_int = Interfacez(MockInt())
 
     for blk in target.block:
         LOG.info('Starting new block in CDR file')
