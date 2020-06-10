@@ -80,6 +80,12 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
     call_stack = deque()
     reg_buffer: DefaultDict[str, List[Reg]] = defaultdict(list)
     cdr_buffer: List[Gcdr] = []
+    
+    class Bunch(dict):
+        __getattr__, __setattr__ = dict.get, dict.__setitem__
+
+
+    void_int = Interfacez(Bunch(dict(_ui=0, _pui_type=0, _pui_index=0)))
 
     for blk in target.block:
         LOG.info('Starting new block in CDR file')
@@ -98,7 +104,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                         userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         dvo = Dvo(False)
                         gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
-                                   to_sec(toc.duration), userA, userB, None, None, toc.termination, dvo, CallType.toc)
+                                   to_sec(toc.duration), userA, userB, void_int, void_int, toc.termination, dvo, CallType.toc)
                         cdr_buffer.append(gdp)
                     else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG
@@ -110,7 +116,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                     userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
-                               to_sec(toc.duration), userA, userB, None, None, toc.termination, dvo, CallType.toc)
+                               to_sec(toc.duration), userA, userB, void_int, void_int, toc.termination, dvo, CallType.toc)
                     cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
@@ -126,13 +132,13 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                         userA = Subscriber(UserType.inner, bcd_to_str(partial_cdr.served_number), partial_cdr.location, UNDEFINED_LOCATION)
                         userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_number), tcc.location, UNDEFINED_LOCATION)
                         gdp = Gcdr(bcd_to_str(partial_cdr.dxt_id), 23, bcd_to_time(partial_cdr.setup_time),
-                                   to_sec(partial_cdr.duration), userA, userB, None, None, partial_cdr.termination, dvo, CallType.toctcc)
+                                   to_sec(partial_cdr.duration), userA, userB, void_int, void_int, partial_cdr.termination, dvo, CallType.toctcc)
                         cdr_buffer.append(gdp)
                     elif type(partial_cdr) is Tetra.InG:
                         userA = Subscriber(UserType.outer, bcd_to_str(partial_cdr.calling_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         userB = Subscriber(UserType.inner, bcd_to_str(tcc.served_nitsi), tcc.location, UNDEFINED_LOCATION)
                         gdp = Gcdr(bcd_to_str(tcc.dxt_id), 23, bcd_to_time(tcc.setup_time),
-                                   to_sec(tcc.duration), userA, userB, None, None, tcc.termination, dvo, CallType.ingtcc)
+                                   to_sec(tcc.duration), userA, userB, void_int, void_int, tcc.termination, dvo, CallType.ingtcc)
                         cdr_buffer.append(gdp)
                     else:
                         raise ValueError(f'Неожиданный тип объекта {type(partial_cdr)}')
@@ -149,7 +155,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                 userB = Subscriber(UserType.outer, bcd_to_str(out_g.transmitted_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                 dvo = Dvo(False)
                 gdp = Gcdr(bcd_to_str(toc.dxt_id), 23, bcd_to_time(toc.setup_time),
-                           to_sec(toc.duration), userA, userB, None, Interfacez(out_g.out_int), toc.termination, dvo, CallType.tocoutg)
+                           to_sec(toc.duration), userA, userB, void_int, Interfacez(out_g.out_int), toc.termination, dvo, CallType.tocoutg)
                 cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.in_g:
                 """ Обработка записи звонка пришедшего из внешней сети """
@@ -163,7 +169,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                     userB = Subscriber(UserType.inner, bcd_to_str(in_g.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(in_g.dxt_id), 23, bcd_to_time(in_g.setup_time), to_sec(in_g.duration),
-                               userA, userB, Interfacez(in_g.inc_int), None, in_g.termination, dvo, CallType.ing)
+                               userA, userB, Interfacez(in_g.inc_int), void_int, in_g.termination, dvo, CallType.ing)
                     cdr_buffer.append(gdp)
                 else:
                     # Продолжаем обрабатывать звонок
@@ -206,7 +212,7 @@ def write_to_csv(out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]], fi
     cdr_buff, reg_buff = out_buffers
     # Write gcdrs to file
     with open(file, 'w+', newline='') as csv_file:
-        wr = csv.writer(csv_file, delimiter=',')
+        wr = csv.writer(csv_file, delimiter=';')
         for cdr in cdr_buff:
             cdr.abon_a.get_last_location(reg_buff, cdr.date, cdr.call_duration)
             cdr.abon_b.get_last_location(reg_buff, cdr.date, cdr.call_duration)

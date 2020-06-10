@@ -167,8 +167,8 @@ class Gcdr:
         return "".join([hex(i)[2:] for i in self.dxt_id])
 
     def __iter__(self):
-        return iter([str(self.date), self.call_duration, self.call_type, self.dvo.switch, self.abon_a.get_type(),
-                     self.dxt_id, self.abon_b.get_type(), str(self.if_in), str(self.if_out), self.dvo.edge_dxt_id,
-                     self.dvo.rouming_dxt_id, str(self.call_termination), self.abon_a.get_number(),
+        return iter([str(self.date), self.call_duration, self.call_type.value, self.dvo.switch, self.abon_a.get_type().value,
+                     self.dxt_id, self.abon_b.get_type().value, str(self.if_in), str(self.if_out), self.dvo.edge_dxt_id,
+                     self.dvo.rouming_dxt_id, self.call_termination.value, self.abon_a.get_number(),
                      self.abon_a.start_location, self.abon_a.end_location, self.abon_b.get_number(),
                      self.abon_b.start_location, self.abon_b.end_location])
