@@ -92,15 +92,16 @@ class Subscriber:
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
             if td > timedelta(minutes=1):
                 print('-- check reg_buffer')
-                lst = reg_buffer.get(self.get_number())
-                new_list = [reg for reg in lst if reg.reg_at > sd and reg.reg_at <= sd + td]
-                if len(new_list) != 0:
-                    print(f'Rouming occured {self.number}')
-                    self.location = new_list[-1].get_location
+                reg_by_abonent = reg_buffer.get(self.get_number())
+                if reg_by_abonent:
+                    new_list = [reg for reg in reg_by_abonent if reg.reg_at > sd and reg.reg_at <= sd + td]
+                    if len(new_list) != 0:
+                        print(f'Rouming occured {self.number}')
+                        self.location = new_list[-1].get_location
+                    else:
+                        self.end_location = self.start_location
                 else:
                     self.end_location = self.start_location
-            else:
-                self.end_location = self.start_location
 
  
     def __str__(self):
