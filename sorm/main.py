@@ -34,7 +34,7 @@ def main(filename, ptus):
     data_out.mkdir(parents=True, exist_ok=True)
     log_file = BASE_DIR.joinpath(config.get(ptus, 'log'))
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    tetra_version = config.get(ptus, 'version')
+    tetra_version: Integer = int(config.get(ptus, 'version'))
 
     # append log files if DEBUG is set (from top of file)
     init_logging(log_file, True)
@@ -69,12 +69,16 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     global LOG
     LOG = logging.getLogger(__name__)
 
-def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
+def cdr_parser(filename, version: Integer) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
+    
+    LOG.info(f'Пытаюсь разобрать {filename} при помощи {type(version)} версии парсера')
 
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
-    else:
+    elif version == 7:
         from kaitai.parser.tetra_v7 import Tetra
+    else:
+        raise Exception("Не удалось загрузить модуль парсера")
 
     target = Tetra.from_file(filename)
 
@@ -96,16 +100,17 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
     for blk in target.block:
         LOG.info('Starting new block in CDR file')
         for event in blk.events.event:
+            pprint(event)
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
                 if len(call_stack) != 0:
-                   raise ValueError(f'Неожиданное вхождение записи TCC. Обработка звонка {event.body.call_reference} завершена не корректно.')
+                   raise ValueError(f'Неожиданное вхождение записи TOC. Обработка звонка {event.body.call_reference} завершена не корректно.')
                 LOG.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
                         # Звонок не состоялся. Строим GCDR и сохраняем в CSV
-                        toc = event.body
+                        toc: Tetra.Toc = event.body
                         userA = Subscriber(UserType.inner, bcd_to_str(toc.served_number), toc.location, toc.location)
                         userB = Subscriber(UserType.inner, bcd_to_str(toc.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                         dvo = Dvo(False)

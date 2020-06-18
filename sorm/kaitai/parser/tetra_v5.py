@@ -1,3 +1,5 @@
+# This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
+
 from pkg_resources import parse_version
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
@@ -27,10 +29,10 @@ class Tetra(KaitaiStruct):
         tcc = 2
         in_g = 3
         out_g = 4
-        redirect = 5
-        sms = 6
+        sms = 5
+        data = 6
         farward = 7
-        data = 8
+        redirect = 8
         reg = 9
 
     class UnitIndexT(Enum):
@@ -247,7 +249,7 @@ class Tetra(KaitaiStruct):
             io = KaitaiStream(BytesIO(self._raw_release_time))
             self.release_time = self._root.Time(io, self, self._root)
             self.duration = self._io.read_u4le()
-            self.pulse = self._io.read_bytes(2)
+            self.pulses_pstn = self._io.read_bytes(2)
             self.termination = self._root.Terminations(self._io.read_u1())
             self.diagnoistic = self._io.read_bytes(2)
 
@@ -454,7 +456,3 @@ class Tetra(KaitaiStruct):
             while not self._io.is_eof():
                 self.event.append(self._root.Event(self._io, self, self._root))
                 i += 1
-
-
-
-

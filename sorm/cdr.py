@@ -1,10 +1,12 @@
+from __future__ import annotations
 import re
 from dataclasses import dataclass
-from sorm.kaitai.parser.tetra_v7 import Tetra
 from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Optional, List, DefaultDict
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from kaitai.parser.tetra_v5 import Tetra
 from sorm.utility import bcd_to_str, bcd_to_time
 
 

@@ -310,7 +310,7 @@ types:
         type: time
       - id: duration
         type: u4
-      - id: pulse
+      - id: pulses_pstn
         size: 2
       - id: termination
         type: u1
@@ -433,10 +433,10 @@ enums:
     2: tcc
     3: in_g
     4: out_g
-    5: redirect
-    6: sms
+    5: sms
+    6: data
     7: farward
-    8: data
+    8: redirect
     9: reg
   unit_index_t:
     0: fnim0
