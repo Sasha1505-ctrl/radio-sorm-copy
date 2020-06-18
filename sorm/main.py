@@ -175,7 +175,7 @@ def cdr_parser(filename, version) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg
                     userB = Subscriber(UserType.inner, bcd_to_str(in_g.called_number), UNDEFINED_LOCATION, UNDEFINED_LOCATION)
                     dvo = Dvo(False)
                     gdp = Gcdr(bcd_to_str(in_g.dxt_id), 23, bcd_to_time(in_g.setup_time), to_sec(in_g.duration),
-                               userA, userB, Interfacez(in_g.inc_int), void_int, in_g.termination, dvo, CallType.ing)
+                               userA, userB, Interfacez(in_g.in_int), void_int, in_g.termination, dvo, CallType.ing)
                     cdr_buffer.append(gdp)
                 else:
                     # Продолжаем обрабатывать звонок
