@@ -127,7 +127,7 @@ def cdr_parser(
                 LOG.debug(f"TOC: {event.body.seq_num} cr: {event.body.call_reference}")
                 if event.body.members == 65535:
                     # Обработка персонального вызова
-                    if event.body.call_reference == 0:
+                    if event.body.termination != Tetra.Terminations.ok:
                         # Звонок не состоялся. Строим GCDR и сохраняем в CSV
                         toc: Tetra.Toc = event.body
                         userA = Subscriber(
