@@ -47,6 +47,13 @@ class Tetra(KaitaiStruct):
         isdn = 8
         fnimet = 9
         sip = 10
+
+    class SdsTypes(Enum):
+        sds_1 = 0
+        sds_2 = 1
+        sds_3 = 2
+        sds_4 = 3
+        status = 4
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -166,7 +173,39 @@ class Tetra(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.body = self._io.read_bytes((251 - 2))
+            self.type = self._root.Types(self._io.read_u1())
+            self.version = self._io.read_u1()
+            self.dxt = self._io.read_u4le()
+            self.checksum = self._io.read_u2le()
+            self.seq_num = self._io.read_u2le()
+            self.ss_numb = self._io.read_u1()
+            self.call_reference = self._io.read_u4le()
+            self.served_number = self._io.read_bytes(10)
+            self.served_nitsi = self._io.read_bytes(10)
+            self.organisation_block = self._io.read_bytes(12)
+            self.calling_number = self._io.read_bytes(14)
+            self.translated_number = self._io.read_bytes(14)
+            self.translated_nitsi = self._io.read_bytes(10)
+            self.connected_number = self._io.read_bytes(14)
+            self.connected_nitsi = self._io.read_bytes(10)
+            self.connection_group = self._io.read_u2le()
+            self.dxt_id = self._io.read_u4le()
+            self.location = self._io.read_u2le()
+            self.cell_identity = self._io.read_bytes(1)
+            self.forward_number = self._io.read_bytes(14)
+            self.translated_forward_number = self._io.read_bytes(14)
+            self.transfer = self._io.read_u1()
+            self.message_reference = self._io.read_u1()
+            self.sds_service_type = self._io.read_u1()
+            self.sds_type = self._root.SdsTypes(self._io.read_u1())
+            self.sds_len = self._io.read_u4le()
+            self.list_of_groups = self._io.read_bytes(80)
+            self.number_of_group = self._io.read_u1()
+            self.timestamp = self._root.Time(self._io, self, self._root)
+            self.cells_distributed = self._io.read_u2le()
+            self.cells_reached = self._io.read_u2le()
+            self.dispatchers_reached = self._io.read_u1()
+            self.sds_result = self._io.read_u1()
 
 
     class Fraw(KaitaiStruct):

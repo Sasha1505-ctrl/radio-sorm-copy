@@ -324,8 +324,74 @@ types:
         size: 125-2
   sds:
     seq:
-      - id: body
-        size: 251-2
+      - id: type
+        type: u1
+        enum: types
+      - id: version
+        type: u1
+      - id: dxt
+        type: u4
+      - id: checksum
+        type: u2
+      - id: seq_num
+        type: u2
+      - id: ss_numb
+        type: u1
+      - id: call_reference
+        type: u4
+      - id: served_number
+        size: 10
+      - id: served_nitsi
+        size: 10
+      - id: organisation_block
+        size: 12
+      - id: calling_number
+        size: 14
+      - id: translated_number
+        size: 14
+      - id: translated_nitsi
+        size: 10
+      - id: connected_number
+        size: 14
+      - id: connected_nitsi
+        size: 10
+      - id: connection_group
+        type: u2
+      - id: dxt_id
+        type: u4
+      - id: location
+        type: u2
+      - id: cell_identity
+        size: 1
+      - id: forward_number
+        size: 14
+      - id: translated_forward_number
+        size: 14
+      - id: transfer
+        type: u1
+      - id: message_reference
+        type: u1
+      - id: sds_service_type
+        type: u1
+      - id: sds_type
+        type: u1
+        enum: sds_types
+      - id: sds_len
+        type: u4
+      - id: list_of_groups
+        size: 80
+      - id: number_of_group
+        type: u1
+      - id: timestamp
+        type: time
+      - id: cells_distributed
+        type: u2
+      - id: cells_reached
+        type: u2
+      - id: dispatchers_reached
+        type: u1
+      - id: sds_result
+        type: u1
   pd:
     seq:
       - id: body
@@ -450,3 +516,9 @@ enums:
     8: isdn
     9: fnimet
     10: sip
+  sds_types:
+    0: sds_1
+    1: sds_2
+    2: sds_3
+    3: sds_4
+    4: status

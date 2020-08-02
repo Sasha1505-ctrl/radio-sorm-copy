@@ -194,7 +194,7 @@ def cdr_parser(
                 """ Обработка запси терминации вызова TCC """
                 if len(call_stack) == 0:
                     raise ValueError(
-                        f"Не обработана запись"
+                        f"Не обработана запись "
                         f"TOC или InG для звонка {event.body.call_reference}"
                     )
                 LOG.debug(f"TCC: {event.body.seq_num} cr: {event.body.call_reference}")
