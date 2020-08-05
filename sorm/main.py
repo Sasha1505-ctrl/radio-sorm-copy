@@ -144,7 +144,7 @@ def cdr_parser(
                         )
                         dvo = Dvo(False)
                         gdp = Gcdr(
-                            bcd_to_str(toc.dxt_id),
+                            toc.dxt_id.as_int,
                             23,
                             bcd_to_time(toc.setup_time),
                             to_sec(toc.duration),
@@ -177,7 +177,7 @@ def cdr_parser(
                     )
                     dvo = Dvo(False)
                     gdp = Gcdr(
-                        bcd_to_str(toc.dxt_id),
+                        toc.dxt_id.as_int,
                         23,
                         bcd_to_time(toc.setup_time),
                         to_sec(toc.duration),
@@ -217,7 +217,7 @@ def cdr_parser(
                             UNDEFINED_LOCATION,
                         )
                         gdp = Gcdr(
-                            bcd_to_str(partial_cdr.dxt_id),
+                            partial_cdr.dxt_id.as_int,
                             23,
                             bcd_to_time(partial_cdr.setup_time),
                             to_sec(partial_cdr.duration),
@@ -244,7 +244,7 @@ def cdr_parser(
                             UNDEFINED_LOCATION,
                         )
                         gdp = Gcdr(
-                            bcd_to_str(tcc.dxt_id),
+                            tcc.dxt_id.as_int,
                             23,
                             bcd_to_time(tcc.setup_time),
                             to_sec(tcc.duration),
@@ -287,7 +287,7 @@ def cdr_parser(
                 )
                 dvo = Dvo(False)
                 gdp = Gcdr(
-                    bcd_to_str(toc.dxt_id),
+                    toc.dxt_id.as_int,
                     23,
                     bcd_to_time(toc.setup_time),
                     to_sec(toc.duration),
@@ -326,7 +326,7 @@ def cdr_parser(
                     )
                     dvo = Dvo(False)
                     gdp = Gcdr(
-                        bcd_to_str(in_g.dxt_id),
+                        in_g.dxt_id.as_int,
                         23,
                         bcd_to_time(in_g.setup_time),
                         to_sec(in_g.duration),
