@@ -81,7 +81,9 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.dxt = self._io.read_u4le()
+            self._raw_dxt = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt))
+            self.dxt = self._root.FourByteBcd(io, self, self._root)
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.served_nitsi = self._io.read_bytes(10)
@@ -93,8 +95,12 @@ class Tetra(KaitaiStruct):
             self.authentication = self._io.read_bytes(1)
             self.encription = self._io.read_bytes(1)
             self.class_ms = self._io.read_bytes(4)
-            self.dxt_id = self._io.read_bytes(4)
-            self.prev_dxt_id = self._io.read_bytes(4)
+            self._raw_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt_id))
+            self.dxt_id = self._root.FourByteBcd(io, self, self._root)
+            self._raw_prev_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_prev_dxt_id))
+            self.prev_dxt_id = self._root.FourByteBcd(io, self, self._root)
             self.location = self._io.read_u2le()
             self.prev_location = self._io.read_u2le()
             self.cell = self._io.read_bytes(1)
@@ -103,6 +109,28 @@ class Tetra(KaitaiStruct):
             self.timestamp = self._root.Time(io, self, self._root)
             self.accept = self._io.read_bytes(1)
             self.reject = self._io.read_bytes(1)
+
+
+    class FourByteBcd(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.fourth = Bcd(2, 4, False, self._io)
+            self.third = Bcd(2, 4, False, self._io)
+            self.second = Bcd(2, 4, False, self._io)
+            self.first = Bcd(2, 4, False, self._io)
+
+        @property
+        def as_int(self):
+            if hasattr(self, '_m_as_int'):
+                return self._m_as_int if hasattr(self, '_m_as_int') else None
+
+            self._m_as_int = ((((self.first.as_int * 10000) + (self.second.as_int * 10000)) + (self.third.as_int * 100)) + self.fourth.as_int)
+            return self._m_as_int if hasattr(self, '_m_as_int') else None
 
 
     class Event(KaitaiStruct):
@@ -175,7 +203,7 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.dxt = self._io.read_u4le()
+            self.dxt = self._root.FourByteBcd(self._io, self, self._root)
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.ss_numb = self._io.read_u1()
@@ -189,7 +217,9 @@ class Tetra(KaitaiStruct):
             self.connected_number = self._io.read_bytes(14)
             self.connected_nitsi = self._io.read_bytes(10)
             self.connection_group = self._io.read_u2le()
-            self.dxt_id = self._io.read_u4le()
+            self._raw_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt_id))
+            self.dxt_id = self._root.FourByteBcd(io, self, self._root)
             self.location = self._io.read_u2le()
             self.cell_identity = self._io.read_bytes(1)
             self.forward_number = self._io.read_bytes(14)
@@ -266,14 +296,18 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.dxt_id = self._io.read_u4le()
+            self._raw_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt_id))
+            self.dxt_id = self._root.FourByteBcd(io, self, self._root)
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.call_reference = self._io.read_u4le()
             self.calling_number = self._io.read_bytes(10)
             self.calling_ntsi = self._io.read_bytes(10)
             self.transmitted_number = self._io.read_bytes(14)
-            self.served_dxt = self._io.read_bytes(4)
+            self._raw_served_dxt = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_served_dxt))
+            self.served_dxt = self._root.FourByteBcd(io, self, self._root)
             self._raw_out_int = self._io.read_bytes(6)
             io = KaitaiStream(BytesIO(self._raw_out_int))
             self.out_int = self._root.Interface(io, self, self._root)
@@ -323,7 +357,9 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.dxt_id = self._io.read_bytes(4)
+            self._raw_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt_id))
+            self.dxt_id = self._root.FourByteBcd(io, self, self._root)
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.unused = self._io.read_bytes(6)
@@ -337,8 +373,12 @@ class Tetra(KaitaiStruct):
             self.connected_number = self._io.read_bytes(14)
             self.connected_nitsi = self._io.read_bytes(10)
             self.connection_group = self._io.read_bytes(2)
-            self.connected_dxt = self._io.read_bytes(4)
-            self.served_dxt = self._io.read_bytes(4)
+            self._raw_connected_dxt = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_connected_dxt))
+            self.connected_dxt = self._root.FourByteBcd(io, self, self._root)
+            self._raw_served_dxt = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_served_dxt))
+            self.served_dxt = self._root.FourByteBcd(io, self, self._root)
             self.location = self._io.read_u2le()
             self.cell_identity = self._io.read_bytes(1)
             self.basic_service_used = self._io.read_bytes(4)
@@ -407,7 +447,9 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_u1()
-            self.dxt_id = self._io.read_bytes(4)
+            self._raw_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt_id))
+            self.dxt_id = self._root.FourByteBcd(io, self, self._root)
             self.checksum = self._io.read_u2le()
             self.seq_num = self._io.read_u2le()
             self.call_reference = self._io.read_u4le()
@@ -415,7 +457,9 @@ class Tetra(KaitaiStruct):
             self.called_number = self._io.read_bytes(10)
             self.translated_number = self._io.read_bytes(14)
             self.translated_ntsi = self._io.read_bytes(10)
-            self.served_dxt = self._io.read_bytes(4)
+            self._raw_served_dxt = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_served_dxt))
+            self.served_dxt = self._root.FourByteBcd(io, self, self._root)
             self._raw_in_int = self._io.read_bytes(6)
             io = KaitaiStream(BytesIO(self._raw_in_int))
             self.in_int = self._root.Interface(io, self, self._root)
@@ -445,7 +489,9 @@ class Tetra(KaitaiStruct):
         def _read(self):
             self.type = self._root.Types(self._io.read_u1())
             self.version = self._io.read_bytes(1)
-            self.dxt_id = self._io.read_bytes(4)
+            self._raw_dxt_id = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_dxt_id))
+            self.dxt_id = self._root.FourByteBcd(io, self, self._root)
             self.checksum = self._io.read_bytes(2)
             self.seq_num = self._io.read_u2le()
             self.skeep = self._io.read_bytes(5)
@@ -455,7 +501,9 @@ class Tetra(KaitaiStruct):
             self.organisation_block = self._io.read_bytes(12)
             self.calling_number = self._io.read_bytes(14)
             self.calling_nitsi = self._io.read_bytes(10)
-            self.served_dxt = self._io.read_bytes(4)
+            self._raw_served_dxt = self._io.read_bytes(4)
+            io = KaitaiStream(BytesIO(self._raw_served_dxt))
+            self.served_dxt = self._root.FourByteBcd(io, self, self._root)
             self.location = self._io.read_u2le()
             self.call_identity = self._io.read_bytes(1)
             self.service = self._io.read_bytes(4)

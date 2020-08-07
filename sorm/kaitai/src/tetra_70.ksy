@@ -75,7 +75,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: checksum
         type: u2
@@ -104,10 +104,10 @@ types:
       - id: connection_group
         size: 2
       - id: connected_dxt
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: served_dxt
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: location
         type: u2
@@ -166,7 +166,7 @@ types:
       - id: version
         size: 1
       - id: dxt_id
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: checksum
         size: 2
@@ -187,7 +187,7 @@ types:
       - id: calling_nitsi
         size: 10
       - id: served_dxt
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: location
         type: u2
@@ -235,7 +235,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: checksum
         type: u2
@@ -252,7 +252,7 @@ types:
       - id: translated_ntsi
         size: 10
       - id: served_dxt
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: in_int
         size: 6
@@ -288,7 +288,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: checksum
         type: u2
@@ -303,7 +303,7 @@ types:
       - id: transmitted_number
         size: 14
       - id: served_dxt
-        type: for_byte_bcd
+        type: four_byte_bcd
         size: 4
       - id: out_int
         size: 6
@@ -343,7 +343,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: for_byte_bcd
+        type: four_byte_bcd
 	size: 4
       - id: checksum
         type: u2
@@ -363,7 +363,7 @@ types:
     - id: version
       type: u1
     - id: dxt
-      type: for_byte_bcd
+      type: four_byte_bcd
       size: 4
     - id: checksum
       type: u2
@@ -390,10 +390,10 @@ types:
     - id: subscriber_class
       size: 2
     - id: dxt_id
-      type: for_byte_bcd
+      type: four_byte_bcd
       size: 4
     - id: prev_dxt_id
-      type: for_byte_bcd
+      type: four_byte_bcd
       size: 4
     - id: location
       type: u2
@@ -418,7 +418,7 @@ types:
       - id: body
         size: 24
 
-  for_byte_bcd:
+  four_byte_bcd:
     seq:
       - id: fourth
         type: bcd(2, 4, false)
