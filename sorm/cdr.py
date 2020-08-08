@@ -189,10 +189,10 @@ class Gcdr:
     def __iter__(self):
         return iter(
             [
-                str(self.date),
+                self.date.strftime('%Y-%m-%d %H:%M:%S'),
                 self.call_duration.total_seconds(),
                 self.call_type.value,
-                self.dvo.switch,
+                int(self.dvo.switch),
                 self.abon_a.get_type().value,
                 self.dxt_id,
                 self.abon_b.get_type().value,
