@@ -110,13 +110,15 @@ class Subscriber:
                         for reg in reg_by_abonent
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
-                    if len(new_list) != 0:
+                    if len(new_list):
                         print(f"Rouming occured {self.number}")
                         self.location = new_list[-1].get_location
                     else:
                         self.end_location = self.start_location
                 else:
                     self.end_location = self.start_location
+            else:
+                self.end_location = self.start_location
 
     def __str__(self):
         return f"{self.get_number()}".format(self)

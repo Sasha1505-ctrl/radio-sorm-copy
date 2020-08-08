@@ -49,7 +49,6 @@ def main(filename, ptus):
 
     global LOG
     LOG = logging.getLogger(__name__)
-    LOG.info("Hello world!")
 
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(
         filename, tetra_version, provider_id
@@ -87,7 +86,7 @@ def cdr_parser(
     filename, version: Integer, provider_id: Integer
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
-    LOG.info(f"Пытаюсь разобрать {filename} при помощи {type(version)} версии парсера")
+    LOG.info(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
 
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
