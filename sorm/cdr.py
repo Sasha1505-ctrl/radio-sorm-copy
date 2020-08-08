@@ -92,7 +92,7 @@ class Subscriber:
     ) -> None:
 
         """
-        Определяем местоположение аблнента
+        Определяем местоположение абонента
         reg_buffer: Список регистраций абонентов в обрабатываемом файле
         sd: Start DateTime время начала разговора
         td: Длительность разговора
@@ -196,6 +196,7 @@ class Gcdr:
                 self.abon_a.get_type().value,
                 self.dxt_id,
                 self.abon_b.get_type().value,
+                self.provider_id,
                 str(self.if_in),
                 str(self.if_out),
                 self.dvo.edge_dxt_id,

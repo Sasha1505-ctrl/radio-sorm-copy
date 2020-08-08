@@ -30,18 +30,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 @click.command()
 @click.argument("filename", type=click.Path(exists=True))
 @click.option(
-    "--ptus", type=click.Choice(["SK", "SV", "VV", "PO", "PI"], case_sensitive=False)
+    "--ptus", type=click.Choice(['SK', 'SV', 'VV', 'PO', 'PI'], case_sensitive=False)
 )
 def main(filename, ptus):
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read(f"{BASE_DIR}/config.properties")
+    config.read(f'{BASE_DIR}/config.properties')
 
-    data_out = BASE_DIR.joinpath(config.get(ptus, "result"))
+    data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
     data_out.mkdir(parents=True, exist_ok=True)
-    log_file = BASE_DIR.joinpath(config.get(ptus, "log"))
+    log_file = BASE_DIR.joinpath(config.get(ptus, 'log'))
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    tetra_version: Integer = int(config.get(ptus, "version"))
+    tetra_version: Integer = int(config.get(ptus, 'version'))
+    provider_id = int(config.get(ptus, 'ptus_id'))
 
     # append log files if DEBUG is set (from top of file)
     init_logging(log_file, True)
@@ -51,7 +52,7 @@ def main(filename, ptus):
     LOG.info("Hello world!")
 
     out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(
-        filename, tetra_version
+        filename, tetra_version, provider_id
     )
     write_to_csv(out_buffers, f"{data_out}/{Path(filename).name}")
 
@@ -83,7 +84,7 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
 
 
 def cdr_parser(
-    filename, version: Integer
+    filename, version: Integer, provider_id: Integer
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
     LOG.info(f"Пытаюсь разобрать {filename} при помощи {type(version)} версии парсера")
@@ -145,7 +146,7 @@ def cdr_parser(
                         dvo = Dvo(False)
                         gdp = Gcdr(
                             toc.dxt_id.as_int,
-                            23,
+                            provider_id,
                             bcd_to_time(toc.setup_time),
                             to_sec(toc.duration),
                             userA,
@@ -178,7 +179,7 @@ def cdr_parser(
                     dvo = Dvo(False)
                     gdp = Gcdr(
                         toc.dxt_id.as_int,
-                        23,
+                        provider_id,
                         bcd_to_time(toc.setup_time),
                         to_sec(toc.duration),
                         userA,
@@ -218,7 +219,7 @@ def cdr_parser(
                         )
                         gdp = Gcdr(
                             partial_cdr.dxt_id.as_int,
-                            23,
+                            provider_id,
                             bcd_to_time(partial_cdr.setup_time),
                             to_sec(partial_cdr.duration),
                             userA,
@@ -245,7 +246,7 @@ def cdr_parser(
                         )
                         gdp = Gcdr(
                             tcc.dxt_id.as_int,
-                            23,
+                            provider_id,
                             bcd_to_time(tcc.setup_time),
                             to_sec(tcc.duration),
                             userA,
@@ -288,7 +289,7 @@ def cdr_parser(
                 dvo = Dvo(False)
                 gdp = Gcdr(
                     toc.dxt_id.as_int,
-                    23,
+                    provider_id,
                     bcd_to_time(toc.setup_time),
                     to_sec(toc.duration),
                     userA,
@@ -327,7 +328,7 @@ def cdr_parser(
                     dvo = Dvo(False)
                     gdp = Gcdr(
                         in_g.dxt_id.as_int,
-                        23,
+                        provider_id,
                         bcd_to_time(in_g.setup_time),
                         to_sec(in_g.duration),
                         userA,
