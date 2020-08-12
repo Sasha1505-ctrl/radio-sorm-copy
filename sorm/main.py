@@ -250,7 +250,7 @@ def cdr_parser(
                             to_sec(tcc.duration),
                             userA,
                             userB,
-                            void_int,
+                            Interfacez(partial_cdr.in_int),
                             void_int,
                             tcc.termination,
                             dvo,

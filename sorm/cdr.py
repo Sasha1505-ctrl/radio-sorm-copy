@@ -191,24 +191,25 @@ class Gcdr:
     def __iter__(self):
         return iter(
             [
-                self.date.strftime('%Y-%m-%d %H:%M:%S'),
-                self.call_duration.total_seconds(),
+                self.date.strftime('%H:%M:%S.%f %d.%m.%Y'),
+                int(self.call_duration.total_seconds()),
                 self.call_type.value,
                 int(self.dvo.switch),
                 self.abon_a.get_type().value,
                 self.dxt_id,
                 self.abon_b.get_type().value,
-                self.provider_id,
                 str(self.if_in),
                 str(self.if_out),
                 self.dvo.edge_dxt_id,
                 self.dvo.rouming_dxt_id,
                 self.call_termination.value,
+                self.provider_id,
                 self.abon_a.get_number(),
                 self.abon_a.start_location,
                 self.abon_a.end_location,
                 self.abon_b.get_number(),
                 self.abon_b.start_location,
                 self.abon_b.end_location,
+                self.dvo.call_forvarding,
             ]
         )
