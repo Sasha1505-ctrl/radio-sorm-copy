@@ -186,12 +186,22 @@ class Gcdr:
 
     @property
     def get_dxt_id(self):
-        return "".join([hex(i)[2:] for i in self.dxt_id])
+        return ''.join([hex(i)[2:] for i in self.dxt_id])
+
+    def _format_time(self):
+        """
+        Formating date string for FastCom requirenments
+
+        :returns: str '13:59:53.27 27.04.2018'
+        """
+        time = self.date.strftime('%H:%M:%S.%f')[:-4]
+        date = self.date.strftime('%d.%m.%Y')
+        return ' '.join([time, date])
 
     def __iter__(self):
         return iter(
             [
-                self.date.strftime('%H:%M:%S.%f %d.%m.%Y'),
+                self._format_time(),
                 int(self.call_duration.total_seconds()),
                 self.call_type.value,
                 int(self.dvo.switch),
