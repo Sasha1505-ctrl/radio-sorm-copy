@@ -87,6 +87,11 @@ class Subscriber:
         else:
             return UserType.unknown
 
+    def get_location(self) -> int:
+        if self.start_location == 65535:
+            return 0
+        return self.start_location
+
     def get_last_location(
         self, reg_buffer: DefaultDict[str, List[Reg]], sd: datetime, td: timedelta
     ) -> None:
@@ -110,7 +115,7 @@ class Subscriber:
                         for reg in reg_by_abonent
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
-                    if len(new_list):
+                    if new_list:
                         print(f"Rouming occured {self.number}")
                         self.location = new_list[-1].get_location
                     else:
@@ -192,11 +197,19 @@ class Gcdr:
         """
         Formating date string for FastCom requirenments
 
-        :returns: str '13:59:53.27 27.04.2018'
+        :returns: str '13:59:53 27.04.2018'
         """
         time = self.date.strftime('%H:%M:%S')
         date = self.date.strftime('%d.%m.%Y')
         return ' '.join([time, date])
+
+    def _normalized_location(self, location)->str:
+        """
+        Request from OASR for back capability
+        """
+        if location == 65535:
+            return '0'
+        return location
 
     def __iter__(self):
         return iter(
@@ -215,11 +228,11 @@ class Gcdr:
                 self.call_termination.value,
                 self.provider_id,
                 self.abon_a.get_number(),
-                self.abon_a.start_location,
-                self.abon_a.end_location,
+                self._normalized_location(self.abon_a.start_location),
+                self._normalized_location(self.abon_a.end_location),
                 self.abon_b.get_number(),
-                self.abon_b.start_location,
-                self.abon_b.end_location,
+                self._normalized_location(self.abon_b.start_location),
+                self._normalized_location(self.abon_b.end_location),
                 self.dvo.call_forvarding,
             ]
         )
