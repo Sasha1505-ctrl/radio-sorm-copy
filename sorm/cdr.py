@@ -135,7 +135,7 @@ class Interfacez:
         self._pui_index = interface.pui_index
 
     def __str__(self):
-        return f"Int: {self._ui.value}:{self._pui_type}{self._pui_index}".format(self)
+        return f"{self._pui_type}".format(self)
 
 
 @dataclass
@@ -194,7 +194,7 @@ class Gcdr:
 
         :returns: str '13:59:53.27 27.04.2018'
         """
-        time = self.date.strftime('%H:%M:%S.%f')[:-4]
+        time = self.date.strftime('%H:%M:%S')
         date = self.date.strftime('%d.%m.%Y')
         return ' '.join([time, date])
 

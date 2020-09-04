@@ -22,7 +22,7 @@ from enum import Enum
 
 from utility import bcd_to_str, bcd_to_time, to_sec
 
-UNDEFINED_LOCATION: int = 65535
+UNDEFINED_LOCATION: int = 0
 LOG = None  # initialized in init_logging
 BASE_DIR = Path(__file__).resolve().parent.parent
 
