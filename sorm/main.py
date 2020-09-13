@@ -50,10 +50,9 @@ def main(filename, ptus):
     global LOG
     LOG = logging.getLogger(__name__)
 
-    out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(
-        filename, tetra_version, provider_id
-    )
-    write_to_csv(out_buffers, f"{data_out}/{Path(filename).name}")
+    for path in Path.cwd().glob(filename):
+        out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
+        write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
 
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
