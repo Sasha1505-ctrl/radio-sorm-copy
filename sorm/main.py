@@ -28,11 +28,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 @click.command()
-@click.argument("filename", type=click.Path(exists=True))
+@click.argument('files', nargs=-1, type=click.Path(exists=True))
 @click.option(
-    "--ptus", type=click.Choice(['SK', 'SV', 'VV', 'PO', 'PI'], case_sensitive=False)
+    '--ptus', type=click.Choice(['SK', 'SV', 'VV', 'PO', 'PI'], case_sensitive=False)
 )
-def main(filename, ptus):
+def main(files, ptus):
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read(f'{BASE_DIR}/config.properties')
@@ -50,7 +50,7 @@ def main(filename, ptus):
     global LOG
     LOG = logging.getLogger(__name__)
 
-    for path in Path.cwd().glob(filename):
+    for path in Path.cwd().glob(files):
         out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
         write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
 
