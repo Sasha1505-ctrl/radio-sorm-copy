@@ -543,6 +543,7 @@ enums:
     8: isdn
     9: fnimet
     10: sip
+    255: err
   sds_types:
     0: sds_1
     1: sds_2

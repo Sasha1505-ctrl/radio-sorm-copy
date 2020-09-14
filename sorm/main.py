@@ -102,7 +102,7 @@ def cdr_parser(
     cdr_buffer: List[Gcdr] = []
 
     class MockUi(Enum):
-        Inner = 1
+        Inner = 0
 
     class MockInt:
         def __init__(self):

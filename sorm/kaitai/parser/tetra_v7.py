@@ -47,6 +47,7 @@ class Tetra(KaitaiStruct):
         isdn = 8
         fnimet = 9
         sip = 10
+        err = 255
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent

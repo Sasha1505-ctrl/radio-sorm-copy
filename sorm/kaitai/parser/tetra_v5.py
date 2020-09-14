@@ -47,6 +47,7 @@ class Tetra(KaitaiStruct):
         isdn = 8
         fnimet = 9
         sip = 10
+        err = 255
 
     class SdsTypes(Enum):
         sds_1 = 0

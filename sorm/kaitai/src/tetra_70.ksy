@@ -497,3 +497,4 @@ enums:
     8: isdn
     9: fnimet
     10: sip
+    255: err
