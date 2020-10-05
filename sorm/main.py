@@ -52,8 +52,12 @@ def main(files, ptus):
 
     for file in files:
         path = Path(file)
-        out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
-        write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
+        try:
+            out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
+        except ValueError as err:
+            print(err)
+        finally:
+            write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
 
 
 def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
@@ -115,16 +119,13 @@ def cdr_parser(
     for blk in target.block:
         LOG.info("Starting new block in CDR file")
         for event in blk.events.event:
-            pprint(event)
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
-                if len(call_stack) != 0:
-                    raise ValueError(
-                        f"Неожиданное вхождение записи TOC."
-                        f"Обработка звонка {event.body.call_reference}"
-                        f"завершена не корректно."
-                    )
-                LOG.debug(f"TOC: {event.body.seq_num} cr: {event.body.call_reference}")
+                if call_stack:
+                    rec = call_stack.pop()
+                    LOG.error(f'Неожиданное вхождение TOC записи в {filename}. Call stack member is {rec.type} -> cr:{rec.call_reference}')
+ 
+                LOG.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
@@ -192,11 +193,10 @@ def cdr_parser(
                     cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
-                if len(call_stack) == 0:
-                    raise ValueError(
-                        f"Не обработана запись "
-                        f"TOC или InG для звонка {event.body.call_reference}"
-                    )
+                if not call_stack:
+                    LOG.error(f'Не обработаны записи TOC или InG для звонка {event.body.type} -> cr: {event.body.call_reference}')
+                    continue
+
                 LOG.debug(f"TCC: {event.body.seq_num} cr: {event.body.call_reference}")
                 partial_cdr = call_stack.pop()
                 if partial_cdr.call_reference == event.body.call_reference:
