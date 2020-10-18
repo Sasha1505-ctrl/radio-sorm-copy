@@ -39,8 +39,11 @@ class Reg:
         self._prev_location = reg.prev_location
         self._reg_at = bcd_to_time(reg.timestamp)
 
+    # TODO эта функция копирует функционал функции get_number класса Subscriber
+    # хорошо бы ее выделить в общий класс
     def get_number(self) -> str:
-        return re.sub(r"[f]+", "", self._nitsi)
+        striped_number = self._nitsi.rstrip('f')
+        return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>', striped_number)
 
     @property
     def reg_at(self) -> datetime:
@@ -70,7 +73,14 @@ class Subscriber:
     end_location: int
 
     def get_number(self):
-        return re.sub(r"[f]+", "", self.number)
+        striped_number = self.number.rstrip('f')
+        if self.stype == UserType.inner:
+            # Normalize tetra user number
+            return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>', striped_number)
+        if self.stype == UserType.outer:
+            # Normalize VSS user number
+            return re.sub(r'(^06)(7\d)(\d{4})$',r'62\g<2>\g<3>', striped_number)
+        return striped_number
 
     #  TODO: масло, маслянное. Думаю нужно переименвать в check_type и
     #  проверять при формировании записи.
