@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, unique
@@ -39,8 +40,7 @@ class Reg:
         self._prev_location = reg.prev_location
         self._reg_at = bcd_to_time(reg.timestamp)
 
-    # TODO эта функция копирует функционал функции get_number класса Subscriber
-    # хорошо бы ее выделить в общий класс
+    # TODO эта функция копирует функционал get_number класса Subscriber
     def get_number(self) -> str:
         striped_number = self._nitsi.rstrip('f')
         return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>', striped_number)
@@ -62,7 +62,7 @@ class Subscriber:
     """
     Абонент сети (радио/всс)
     stype: тип абонента (внешний/внутренний) относительно коммутатора Тетра
-    mumbber: телефонный номер абонента
+    number: телефонный номер абонента
     start_location: номер БС в начале разговора (для внутренних абонентов)
     end_location: номер БС в конце разговора (для внутренних абонентов)
     """
@@ -112,12 +112,12 @@ class Subscriber:
         sd: Start DateTime время начала разговора
         td: Длительность разговора
         """
-        print(f"Abonent type is {self.stype}")
+        logging.debug(f'Abonent type is {self.stype}')
         if self.stype == UserType.inner:
-            print(f"Check rouming for user {self.get_number()}")
+            logging.debug(f"Check rouming for user {self.get_number()}")
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
             if td > timedelta(minutes=1):
-                print("-- check reg_buffer")
+                logging.debug("-- check reg_buffer")
                 reg_by_abonent = reg_buffer.get(self.get_number())
                 if reg_by_abonent:
                     new_list = [
@@ -126,7 +126,7 @@ class Subscriber:
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
                     if new_list:
-                        print(f"Rouming occured {self.number}")
+                        logging.debug(f"Rouming occured {self.number}")
                         self.location = new_list[-1].get_location
                     else:
                         self.end_location = self.start_location
