@@ -62,7 +62,7 @@ def main(files, ptus):
             write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
 
 
-def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
+def init_logging(log_file=None, append=False, console_loglevel=logging.DEBUG):
     """Set up logging to file and console."""
     if log_file is not None:
         if append:
@@ -70,7 +70,7 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
         else:
             filemode_val = 'w'
     
-    logger = logging.getLogger(log_file.name)
+    logger = logging.getLogger(__name__)
     logger.setLevel(console_loglevel)
     format_string = ("%(asctime)s — %(name)s — %(levelname)s — %(funcName)s:"
                     "%(lineno)d — %(message)s")
@@ -80,7 +80,7 @@ def init_logging(log_file=None, append=False, console_loglevel=logging.INFO):
     console_handler.setFormatter(log_format)
     logger.addHandler(console_handler)
     # Creating and adding the file handler
-    file_handler = logging.FileHandler(log_file, filemode_val)
+    file_handler = logging.FileHandler(log_file.name, filemode_val)
     file_handler.setFormatter(log_format)
     logger.addHandler(file_handler)
     return logger
@@ -346,8 +346,8 @@ def cdr_parser(
             if event.body.type == Tetra.Types.reg:
                 """ Обработка записи о регистрации абонента """
                 logger.debug(
-                    f"REG: {event.body.seq_num}"
-                    f"SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)}"
+                    f"REG: {event.body.seq_num} "
+                    f"SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)} "
                     f"LOCATION: {event.body.location}:{event.body.prev_location}"
                 )
                 reg = Reg(event.body)

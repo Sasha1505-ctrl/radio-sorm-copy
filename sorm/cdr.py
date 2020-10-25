@@ -71,6 +71,7 @@ class Subscriber:
     number: str
     start_location: int
     end_location: int
+    logger = logging.getLogger(__name__)
 
     def get_number(self):
         striped_number = self.number.rstrip('f')
@@ -112,12 +113,12 @@ class Subscriber:
         sd: Start DateTime время начала разговора
         td: Длительность разговора
         """
-        logging.debug(f'Abonent type is {self.stype}')
+        self.logger.debug(f'Abonent type is {self.stype}')
         if self.stype == UserType.inner:
-            logging.debug(f"Check rouming for user {self.get_number()}")
+            self.logger.debug(f"Check rouming for user {self.get_number()}")
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
             if td > timedelta(minutes=1):
-                logging.debug("-- check reg_buffer")
+                self.logger.debug("-- check reg_buffer")
                 reg_by_abonent = reg_buffer.get(self.get_number())
                 if reg_by_abonent:
                     new_list = [
@@ -126,7 +127,7 @@ class Subscriber:
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
                     if new_list:
-                        logging.debug(f"Rouming occured {self.number}")
+                        self.logger.debug(f"Rouming occured {self.number}")
                         self.location = new_list[-1].get_location
                     else:
                         self.end_location = self.start_location
