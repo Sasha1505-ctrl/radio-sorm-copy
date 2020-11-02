@@ -1,11 +1,11 @@
 from __future__ import annotations
 import re
-import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Optional, List, DefaultDict
 from typing import TYPE_CHECKING
+from utility import get_logger
 
 if TYPE_CHECKING:
     from kaitai.parser.tetra_v5 import Tetra
@@ -43,7 +43,8 @@ class Reg:
     # TODO эта функция копирует функционал get_number класса Subscriber
     def get_number(self) -> str:
         striped_number = self._nitsi.rstrip('f')
-        return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>', striped_number)
+        return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>',
+                      striped_number)
 
     @property
     def reg_at(self) -> datetime:
@@ -71,16 +72,17 @@ class Subscriber:
     number: str
     start_location: int
     end_location: int
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
 
     def get_number(self):
         striped_number = self.number.rstrip('f')
         if self.stype == UserType.inner:
             # Normalize tetra user number
-            return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>', striped_number)
+            return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>',
+                          striped_number)
         if self.stype == UserType.outer:
             # Normalize VSS user number
-            return re.sub(r'(^06)(7\d)(\d{4})$',r'62\g<2>\g<3>', striped_number)
+            return re.sub(r'(^06)(7\d)(\d{4})$', r'62\g<2>\g<3>', striped_number)
         return striped_number
 
     #  TODO: масло, маслянное. Думаю нужно переименвать в check_type и
@@ -214,7 +216,7 @@ class Gcdr:
         date = self.date.strftime('%d.%m.%Y')
         return ' '.join([time, date])
 
-    def _normalized_location(self, location)->str:
+    def _normalized_location(self, location) -> str:
         """
         Request from OASR for back capability
         """

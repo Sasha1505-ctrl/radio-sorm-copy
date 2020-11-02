@@ -15,14 +15,12 @@ from sqlalchemy import (
     MetaData,
     PrimaryKeyConstraint,
 )
-from pprint import pprint
 from pathlib import Path
 from enum import Enum
 
 from utility import get_logger, bcd_to_str, bcd_to_time, to_sec
 
 UNDEFINED_LOCATION: int = 0
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 logger = get_logger(__name__)
 
@@ -33,26 +31,13 @@ logger = get_logger(__name__)
 )
 def main(files, ptus):
 
-    config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read(f'{BASE_DIR}/config.properties')
-
-    data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
-    data_out.mkdir(parents=True, exist_ok=True)
-    tetra_version: Integer = int(config.get(ptus, 'version'))
-    provider_id = int(config.get(ptus, 'ptus_id'))
-    
     for cdr_file in files:
         logger.info(f'Processing {cdr_file}')
-        # Определяем имя файла журнала
-        # log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), cdr_file)
-        # log_file.parent.mkdir(parents=True, exist_ok=True)
-        # append log files if DEBUG is set (from top of file)
-
         path = Path(cdr_file)
         try:
             out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
         except ValueError as err:
-            print(err)
+            logger.error(err)
         finally:
             write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
 
@@ -61,13 +46,14 @@ def cdr_parser(
     filename, version: Integer, provider_id: Integer
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
-    logger.info(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
+    logger.warn(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
 
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
     elif version == 7:
         from kaitai.parser.tetra_v7 import Tetra
     else:
+        logger.error(f'Не удалось загрузить модуль парсера')
         raise Exception("Не удалось загрузить модуль парсера")
 
     target = Tetra.from_file(filename)
@@ -88,13 +74,14 @@ def cdr_parser(
     void_int = Interfacez(MockInt())
 
     for blk in target.block:
-        logger.info('Starting new block in CDR file')
+        logger.debug('Starting new block in CDR file')
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
                 if call_stack:
                     rec = call_stack.pop()
-                    logger.error(f'Неожиданное вхождение TOC записи в {filename}. Call stack member is {rec.type} -> cr:{rec.call_reference}')
+                    logger.error(f'Неожиданное вхождение TOC записи в {filename}.
+                                 Call stack member is {rec.type} -> cr: {rec.call_reference}')
  
                 logger.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.members == 65535:
@@ -165,7 +152,8 @@ def cdr_parser(
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
                 if not call_stack:
-                    logger.error(f'Не обработаны записи TOC или InG для звонка {event.body.type} -> cr: {event.body.call_reference}')
+                    logger.error(f'Не обработаны записи TOC или InG для звонка
+                                 {event.body.type} -> cr: {event.body.call_reference}')
                     continue
 
                 logger.debug(f"TCC: {event.body.seq_num} cr: {event.body.call_reference}")

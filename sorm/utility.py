@@ -37,6 +37,21 @@ def to_sec(dec_msec: int) -> timedelta:
 
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+# Определяем имя файла журнала
+log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), cdr_file)
+log_file.parent.mkdir(parents=True, exist_ok=True)
+# append log files if DEBUG is set (from top of file)
+
+config = ConfigParser(interpolation=ExtendedInterpolation())
+config.read(f'{BASE_DIR}/config.properties')
+
+data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
+data_out.mkdir(parents=True, exist_ok=True)
+tetra_version: Integer = int(config.get(ptus, 'version'))
+provider_id = int(config.get(ptus, 'ptus_id'))
+
+
 
 def get_file_handler():
     file_handler = logging.FileHandler('x.log')
@@ -47,14 +62,14 @@ def get_file_handler():
 
 def get_stream_handler():
     stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.INFO)
+    stream_handler.setLevel(logging.DEBUG)
     stream_handler.setFormatter(logging.Formatter(_log_format))
     return stream_handler
 
 
 def get_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(get_file_handler())
     logger.addHandler(get_stream_handler())
     return logger
