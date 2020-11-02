@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from binascii import b2a_hex
 import logging
+from configparser import ConfigParser, ExtendedInterpolation
+from pathlib import Path
 
 
 def bcd_to_str(arr: bytearray) -> str:
@@ -35,26 +37,33 @@ def to_sec(dec_msec: int) -> timedelta:
     return timedelta(seconds=round(dec_msec/100))
 
 
-_log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
+def set_variables(ptus):
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    # Определяем имя файла журнала
+    config = ConfigParser(interpolation=ExtendedInterpolation())
+    config.read(f'{BASE_DIR}/config.properties')
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-# Определяем имя файла журнала
-log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), cdr_file)
-log_file.parent.mkdir(parents=True, exist_ok=True)
-# append log files if DEBUG is set (from top of file)
+    log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), 'processing.log')
+    log_file.parent.mkdir(parents=True, exist_ok=True)
 
-config = ConfigParser(interpolation=ExtendedInterpolation())
-config.read(f'{BASE_DIR}/config.properties')
+    data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
+    data_out.mkdir(parents=True, exist_ok=True)
+    tetra_version: int = int(config.get(ptus, 'version'))
+    provider_id: int = int(config.get(ptus, 'ptus_id'))
 
-data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
-data_out.mkdir(parents=True, exist_ok=True)
-tetra_version: Integer = int(config.get(ptus, 'version'))
-provider_id = int(config.get(ptus, 'ptus_id'))
+    return {
+        'log': log_file,
+        'data': data_out,
+        'dxt_release': tetra_version,
+        'provider_id': provider_id
+        }
 
 
+_log_format = f'%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s'
 
-def get_file_handler():
-    file_handler = logging.FileHandler('x.log')
+
+def get_file_handler(filename):
+    file_handler = logging.FileHandler(filename)
     file_handler.setLevel(logging.WARNING)
     file_handler.setFormatter(logging.Formatter(_log_format))
     return file_handler
@@ -67,9 +76,9 @@ def get_stream_handler():
     return stream_handler
 
 
-def get_logger(name):
-    logger = logging.getLogger(name)
+def get_logger(filename):
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(get_file_handler())
+    logger.addHandler(get_file_handler(filename))
     logger.addHandler(get_stream_handler())
     return logger

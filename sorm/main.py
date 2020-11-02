@@ -5,7 +5,6 @@ import click
 import csv
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
 from sqlalchemy import create_engine
-from configparser import ConfigParser, ExtendedInterpolation
 from sqlalchemy import (
     Table,
     Column,
@@ -18,11 +17,10 @@ from sqlalchemy import (
 from pathlib import Path
 from enum import Enum
 
-from utility import get_logger, bcd_to_str, bcd_to_time, to_sec
+from utility import get_logger, set_variables, bcd_to_str, bcd_to_time, to_sec
 
 UNDEFINED_LOCATION: int = 0
 
-logger = get_logger(__name__)
 
 @click.command()
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
@@ -30,20 +28,27 @@ logger = get_logger(__name__)
     '--ptus', type=click.Choice(['SK', 'SV', 'VV', 'PO', 'PI'], case_sensitive=False)
 )
 def main(files, ptus):
+    var_dict = set_variables(ptus)
+    logger = get_logger(var_dict.get('log'))
 
     for cdr_file in files:
         logger.info(f'Processing {cdr_file}')
         path = Path(cdr_file)
         try:
-            out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
+            out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(
+                path,
+                var_dict.get('dxt_release'),
+                var_dict.get('provider_id'),
+                logger
+                )
         except ValueError as err:
             logger.error(err)
         finally:
-            write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
+            write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
 
 
 def cdr_parser(
-    filename, version: Integer, provider_id: Integer
+    filename, version: int, provider_id: int, logger
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
     logger.warn(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
@@ -80,8 +85,9 @@ def cdr_parser(
                 """ Обработка записи инициализации вызова TOC """
                 if call_stack:
                     rec = call_stack.pop()
-                    logger.error(f'Неожиданное вхождение TOC записи в {filename}.
-                                 Call stack member is {rec.type} -> cr: {rec.call_reference}')
+                    logger.error(f'Неожиданное вхождение TOC записи в {filename}.'
+                                 f'Call stack member is {rec.type} -> '
+                                 f'cr: {rec.call_reference}')
  
                 logger.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.members == 65535:
@@ -152,8 +158,8 @@ def cdr_parser(
             if event.body.type == Tetra.Types.tcc:
                 """ Обработка запси терминации вызова TCC """
                 if not call_stack:
-                    logger.error(f'Не обработаны записи TOC или InG для звонка
-                                 {event.body.type} -> cr: {event.body.call_reference}')
+                    logger.error(f'Не обработаны записи TOC или InG для звонка'
+                                 f'{event.body.type} -> cr: {event.body.call_reference}')
                     continue
 
                 logger.debug(f"TCC: {event.body.seq_num} cr: {event.body.call_reference}")

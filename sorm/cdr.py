@@ -129,7 +129,7 @@ class Subscriber:
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
                     if new_list:
-                        self.logger.debug(f"Rouming occured {self.number}")
+                        self.logger.warn(f"Rouming occured {self.number}")
                         self.location = new_list[-1].get_location
                     else:
                         self.end_location = self.start_location
