@@ -3,8 +3,6 @@ from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
 import click
 import csv
-import logging
-import sys
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
 from sqlalchemy import create_engine
 from configparser import ConfigParser, ExtendedInterpolation
@@ -21,11 +19,12 @@ from pprint import pprint
 from pathlib import Path
 from enum import Enum
 
-from utility import bcd_to_str, bcd_to_time, to_sec
+from utility import get_logger, bcd_to_str, bcd_to_time, to_sec
 
 UNDEFINED_LOCATION: int = 0
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+logger = get_logger(__name__)
 
 @click.command()
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
@@ -41,53 +40,25 @@ def main(files, ptus):
     data_out.mkdir(parents=True, exist_ok=True)
     tetra_version: Integer = int(config.get(ptus, 'version'))
     provider_id = int(config.get(ptus, 'ptus_id'))
-
-    # global logging
-    # logging = logging.getLogger(__name__)
- 
+    
     for cdr_file in files:
-
+        logger.info(f'Processing {cdr_file}')
         # Определяем имя файла журнала
-        log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), cdr_file)
-        log_file.parent.mkdir(parents=True, exist_ok=True)
+        # log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), cdr_file)
+        # log_file.parent.mkdir(parents=True, exist_ok=True)
         # append log files if DEBUG is set (from top of file)
-        logger = init_logging(log_file, False)
 
         path = Path(cdr_file)
         try:
-            out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id, logger)
+            out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(path, tetra_version, provider_id)
         except ValueError as err:
             print(err)
         finally:
             write_to_csv(out_buffers, f"{data_out}/{Path(path).name}")
 
 
-def init_logging(log_file=None, append=False, console_loglevel=logging.DEBUG):
-    """Set up logging to file and console."""
-    if log_file is not None:
-        if append:
-            filemode_val = 'a'
-        else:
-            filemode_val = 'w'
-    
-    logger = logging.getLogger(__name__)
-    logger.setLevel(console_loglevel)
-    format_string = ("%(asctime)s — %(name)s — %(levelname)s — %(funcName)s:"
-                    "%(lineno)d — %(message)s")
-    log_format = logging.Formatter(format_string)
-    # Creating and adding the console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(log_format)
-    logger.addHandler(console_handler)
-    # Creating and adding the file handler
-    file_handler = logging.FileHandler(log_file.name, filemode_val)
-    file_handler.setFormatter(log_format)
-    logger.addHandler(file_handler)
-    return logger
-
-
 def cdr_parser(
-    filename, version: Integer, provider_id: Integer, logger: logging.Logger,
+    filename, version: Integer, provider_id: Integer
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
     logger.info(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
@@ -117,7 +88,7 @@ def cdr_parser(
     void_int = Interfacez(MockInt())
 
     for blk in target.block:
-        logger.info("Starting new block in CDR file")
+        logger.info('Starting new block in CDR file')
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
