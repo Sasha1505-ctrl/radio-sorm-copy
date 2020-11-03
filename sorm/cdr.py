@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Optional, List, DefaultDict
 from typing import TYPE_CHECKING
-from sorm.utility import get_logger
+from utility import get_logger
 
 if TYPE_CHECKING:
     from kaitai.parser.tetra_v5 import Tetra
@@ -43,8 +43,15 @@ class Reg:
     # TODO эта функция копирует функционал get_number класса Subscriber
     def get_number(self) -> str:
         striped_number = self._nitsi.rstrip('f')
-        return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>',
-                      striped_number)
+        return re.sub(
+            r'^(10|0e)(20250000)(75)(78)?(\d{4})$',
+            (
+                lambda m: ''.join(['62', m.group(4), m.group(5)])
+                if m.group(4)
+                else ''.join(['6200', m.group(5)])
+            ),
+            striped_number,
+        )
 
     @property
     def reg_at(self) -> datetime:
@@ -78,8 +85,15 @@ class Subscriber:
         striped_number = self.number.rstrip('f')
         if self.stype == UserType.inner:
             # Normalize tetra user number
-            return re.sub(r'^(10|0e)(20250000)(75)(?:78)?(\d{4})$', r'\g<3>78\g<4>',
-                          striped_number)
+            return re.sub(
+                r'^(10|0e)(20250000)(75)(78)?(\d{4})$',
+                (
+                    lambda m: ''.join(['62', m.group(4), m.group(5)])
+                    if m.group(4)
+                    else ''.join(['6200', m.group(5)])
+                ),
+                striped_number,
+            )
         if self.stype == UserType.outer:
             # Normalize VSS user number
             return re.sub(r'(^06)(7\d)(\d{4})$', r'62\g<2>\g<3>', striped_number)
@@ -129,7 +143,7 @@ class Subscriber:
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
                     if new_list:
-                        self.logger.warn(f"Rouming occured {self.number}")
+                        self.logger.warn(f"Roaming occured {self.get_number()}")
                         self.location = new_list[-1].get_location
                     else:
                         self.end_location = self.start_location
