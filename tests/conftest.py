@@ -4,9 +4,9 @@ from sorm.cdr import Subscriber, UserType
 @pytest.fixture()
 def tetra_user():
     return [
-        (Subscriber(UserType.inner, '102025000075780046ff', 501, 501), '75780046'),
-        (Subscriber(UserType.inner, '0e20250000755995ffffffffff', 65535, 65535), '75785995'),
-        (Subscriber(UserType.inner, '102025000075782418ffffffffff', 506, 65535), '75782418'),
+        (Subscriber(UserType.inner, '102025000075780046ff', 501, 501), '62780046'),
+        (Subscriber(UserType.inner, '0e20250000755995ffffffffff', 65535, 65535), '62005995'),
+        (Subscriber(UserType.inner, '102025000075782418ffffffffff', 506, 65535), '62782418'),
     ]
 
          

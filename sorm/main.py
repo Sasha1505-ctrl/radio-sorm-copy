@@ -51,7 +51,7 @@ def cdr_parser(
     filename, version: int, provider_id: int, logger
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
-    logger.warn(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
+    logger.debug(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
 
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra

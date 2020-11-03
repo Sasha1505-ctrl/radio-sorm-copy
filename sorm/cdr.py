@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Optional, List, DefaultDict
 from typing import TYPE_CHECKING
-from utility import get_logger
+from sorm.utility import get_logger
 
 if TYPE_CHECKING:
     from kaitai.parser.tetra_v5 import Tetra
