@@ -77,7 +77,7 @@ def get_stream_handler():
 
 
 def get_logger(filename):
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__file__)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(get_file_handler(filename))
     logger.addHandler(get_stream_handler())

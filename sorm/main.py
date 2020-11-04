@@ -100,12 +100,14 @@ def cdr_parser(
                             bcd_to_str(toc.served_number),
                             toc.location,
                             toc.location,
+                            logger,
                         )
                         userB = Subscriber(
                             UserType.inner,
                             bcd_to_str(toc.called_number),
                             UNDEFINED_LOCATION,
                             UNDEFINED_LOCATION,
+                            logger,
                         )
                         dvo = Dvo(False)
                         gdp = Gcdr(
@@ -133,12 +135,14 @@ def cdr_parser(
                         bcd_to_str(toc.served_number),
                         toc.location,
                         toc.location,
+                        logger,
                     )
                     userB = Subscriber(
                         UserType.inner,
                         bcd_to_str(toc.called_number),
                         UNDEFINED_LOCATION,
                         UNDEFINED_LOCATION,
+                        logger,
                     )
                     dvo = Dvo(False)
                     gdp = Gcdr(
@@ -174,12 +178,14 @@ def cdr_parser(
                             bcd_to_str(partial_cdr.served_number),
                             partial_cdr.location,
                             UNDEFINED_LOCATION,
+                            logger,
                         )
                         userB = Subscriber(
                             UserType.inner,
                             bcd_to_str(tcc.served_number),
                             tcc.location,
                             UNDEFINED_LOCATION,
+                            logger,
                         )
                         gdp = Gcdr(
                             partial_cdr.dxt_id.as_int,
@@ -201,12 +207,14 @@ def cdr_parser(
                             bcd_to_str(partial_cdr.calling_number),
                             UNDEFINED_LOCATION,
                             UNDEFINED_LOCATION,
+                            logger,
                         )
                         userB = Subscriber(
                             UserType.inner,
                             bcd_to_str(tcc.served_nitsi),
                             tcc.location,
                             UNDEFINED_LOCATION,
+                            logger,
                         )
                         gdp = Gcdr(
                             tcc.dxt_id.as_int,
@@ -243,12 +251,14 @@ def cdr_parser(
                     bcd_to_str(toc.served_number),
                     toc.location,
                     UNDEFINED_LOCATION,
+                    logger,
                 )
                 userB = Subscriber(
                     UserType.outer,
                     bcd_to_str(out_g.transmitted_number),
                     UNDEFINED_LOCATION,
                     UNDEFINED_LOCATION,
+                    logger,
                 )
                 dvo = Dvo(False)
                 gdp = Gcdr(
@@ -282,12 +292,14 @@ def cdr_parser(
                         bcd_to_str(in_g.calling_number),
                         UNDEFINED_LOCATION,
                         UNDEFINED_LOCATION,
+                        logger,
                     )
                     userB = Subscriber(
                         UserType.inner,
                         bcd_to_str(in_g.called_number),
                         UNDEFINED_LOCATION,
                         UNDEFINED_LOCATION,
+                        logger,
                     )
                     dvo = Dvo(False)
                     gdp = Gcdr(

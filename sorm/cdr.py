@@ -3,13 +3,18 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import Optional, List, DefaultDict
-from typing import TYPE_CHECKING
-from utility import get_logger
+from typing import (
+    Optional,
+    List,
+    DefaultDict,
+    TYPE_CHECKING
+)
+from typing_extensions import final
 
 if TYPE_CHECKING:
     from kaitai.parser.tetra_v5 import Tetra
 from sorm.utility import bcd_to_str, bcd_to_time
+import logging
 
 
 @unique
@@ -64,9 +69,9 @@ class Reg:
     def __str__(self):
         return f"{self._reg_at}:{self.get_number()}".format(self=self)
 
-
+@final
 @dataclass
-class Subscriber:
+class Subscriber(object):
     """
     Абонент сети (радио/всс)
     stype: тип абонента (внешний/внутренний) относительно коммутатора Тетра
@@ -79,7 +84,7 @@ class Subscriber:
     number: str
     start_location: int
     end_location: int
-    logger = get_logger(__name__)
+    _logger: logging
 
     def get_number(self):
         striped_number = self.number.rstrip('f')
@@ -129,12 +134,12 @@ class Subscriber:
         sd: Start DateTime время начала разговора
         td: Длительность разговора
         """
-        self.logger.debug(f'Abonent type is {self.stype}')
+        self._logger.debug(f'Abonent type is {self.stype}')
         if self.stype == UserType.inner:
-            self.logger.debug(f"Check rouming for user {self.get_number()}")
+            self._logger.debug(f"Check rouming for user {self.get_number()}")
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
             if td > timedelta(minutes=1):
-                self.logger.debug("-- check reg_buffer")
+                logging.debug("-- check reg_buffer")
                 reg_by_abonent = reg_buffer.get(self.get_number())
                 if reg_by_abonent:
                     new_list = [
@@ -143,7 +148,7 @@ class Subscriber:
                         if reg.reg_at > sd and reg.reg_at <= sd + td
                     ]
                     if new_list:
-                        self.logger.warn(f"Roaming occured {self.get_number()}")
+                        self._logger.warn(f"Roaming occured {self.get_number()}")
                         self.location = new_list[-1].get_location
                     else:
                         self.end_location = self.start_location
