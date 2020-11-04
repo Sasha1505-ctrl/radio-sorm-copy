@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
-import click
-import csv
+import click, csv, sys
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
-from sqlalchemy import create_engine
 from sqlalchemy import (
     Table,
     Column,
@@ -13,12 +11,14 @@ from sqlalchemy import (
     DateTime,
     MetaData,
     PrimaryKeyConstraint,
+    create_engine,
 )
 from pathlib import Path
 from enum import Enum
 
 from utility import get_logger, set_variables, bcd_to_str, bcd_to_time, to_sec
 
+from pprint import pprint
 UNDEFINED_LOCATION: int = 0
 
 
@@ -41,10 +41,13 @@ def main(files, ptus):
                 var_dict.get('provider_id'),
                 logger
                 )
+            write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
         except ValueError as err:
             logger.error(err)
-        finally:
-            write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
+        except AttributeError as err:
+            logger.error(f'Check Tetra software release. {err}')
+        except Exception as exp:
+            logger.error(f'No Tetra format or file corrupted {exp}')    
 
 
 def cdr_parser(
@@ -79,7 +82,7 @@ def cdr_parser(
     void_int = Interfacez(MockInt())
 
     for blk in target.block:
-        logger.debug('Starting new block in CDR file')
+        logger.debug(f'Starting new block {blk.header.block_num} in CDR file')
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
                 """ Обработка записи инициализации вызова TOC """
