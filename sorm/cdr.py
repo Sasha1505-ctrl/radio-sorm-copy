@@ -95,13 +95,13 @@ class Subscriber(object):
                 (
                     lambda m: ''.join(['62', m.group(4), m.group(5)])
                     if m.group(4)
-                    else ''.join(['6200', m.group(5)])
+                    else ''.join(['6278', m.group(5)]) #Add cheat for Kalinich req. Mask group number as a typical abonent.
                 ),
                 striped_number,
             )
         if self.stype == UserType.outer:
             # Normalize VSS user number
-            return re.sub(r'(^06)(7\d)(\d{4})$', r'62\g<2>\g<3>', striped_number)
+            return re.sub(r'^(09162|06)(7\d)(\d{4})$', r'62\g<2>\g<3>', striped_number)
         return striped_number
 
     #  TODO: масло, маслянное. Думаю нужно переименвать в check_type и
