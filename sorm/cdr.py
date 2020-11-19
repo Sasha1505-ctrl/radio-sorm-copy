@@ -26,11 +26,12 @@ class UserType(Enum):
 
 @unique
 class CallType(Enum):
-    toc = 1
+    outg = 1
     toctcc = 2
     tocoutg = 3
     ing = 4
     ingtcc = 5
+    toc = 6
 
 
 class Reg:
