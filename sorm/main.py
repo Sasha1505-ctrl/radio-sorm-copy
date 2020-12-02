@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import traceback
 from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
 import click, csv, sys
@@ -46,6 +47,8 @@ def main(files, ptus):
             logger.error(err)
         except AttributeError as err:
             logger.error(f'Check Tetra software release. {err}')
+            track = traceback.format_exc()
+            print(track)
         except Exception as exp:
             logger.error(f'No Tetra format or file corrupted {exp}')    
 
@@ -332,6 +335,40 @@ def cdr_parser(
                 )
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
+            if event.body.type == Tetra.Types.sms:
+                """ Обработка записи о текстовом сообщении """
+                logger.debug("I'am find SMS")
+                sds: Tetra.Sds = event.body
+                userA = Subscriber(
+                     UserType.inner,
+                     bcd_to_str(sds.served_number),
+                     sds.location,
+                     sds.location,
+                     logger,
+                )
+                userB = Subscriber(
+                   UserType.inner,
+                   bcd_to_str(sds.connected_number),
+                   UNDEFINED_LOCATION,
+                   UNDEFINED_LOCATION,
+                   logger,
+                )
+                dvo = Dvo(False)
+                gdp = Gcdr(
+                    sds.dxt_id.as_int,
+                    provider_id,
+                    bcd_to_time(sds.time_stamp),
+                    to_sec(0),
+                    userA,
+                    userB,
+                    void_int,
+                    void_int,
+                    sds.sds_type,
+                    dvo,
+                    CallType.sms,
+                )
+                cdr_buffer.append(gdp)
+
         logger.info(
             f"End reading block. Calls quantity: {len(cdr_buffer)}."
             f"Regs quantity: {len(reg_buffer)}"

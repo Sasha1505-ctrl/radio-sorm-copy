@@ -32,6 +32,7 @@ class CallType(Enum):
     ing = 4
     ingtcc = 5
     toc = 6
+    sms = 7
 
 
 class Reg:
@@ -102,7 +103,10 @@ class Subscriber(object):
             )
         if self.stype == UserType.outer:
             # Normalize VSS user number
-            return re.sub(r'^(09162|06)(7\d)(\d{4})$', r'62\g<2>\g<3>', striped_number)
+            if len(striped_number) == 6:
+                # Cheat for call on short number in Tih 042208
+                return re.sub(r'(04)(\d{4})$', r'6279\g<2>', striped_number)
+            return re.sub(r'^\d*2?(7\d)(\d{4})$', r'62\g<1>\g<2>', striped_number)
         return striped_number
 
     #  TODO: масло, маслянное. Думаю нужно переименвать в check_type и
@@ -114,7 +118,7 @@ class Subscriber(object):
         ):
             return UserType.inner
         elif (
-            re.search(r"[6]?[2]?(7)\d{5}", self.number) and self.stype is UserType.outer
+            re.search(r"(112025|0916|0900|04|06)(0)*(75)?(2)?(7\d)?\d{4}", self.number) and self.stype is UserType.outer
         ):
             return UserType.outer
         else:
