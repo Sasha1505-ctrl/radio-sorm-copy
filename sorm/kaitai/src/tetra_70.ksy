@@ -75,7 +75,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: checksum
         type: u2
@@ -104,10 +104,10 @@ types:
       - id: connection_group
         size: 2
       - id: connected_dxt
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: served_dxt
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: location
         type: u2
@@ -166,7 +166,7 @@ types:
       - id: version
         size: 1
       - id: dxt_id
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: checksum
         size: 2
@@ -187,7 +187,7 @@ types:
       - id: calling_nitsi
         size: 10
       - id: served_dxt
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: location
         type: u2
@@ -235,7 +235,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: checksum
         type: u2
@@ -252,7 +252,7 @@ types:
       - id: translated_ntsi
         size: 10
       - id: served_dxt
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: in_int
         size: 6
@@ -288,7 +288,7 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: checksum
         type: u2
@@ -303,7 +303,7 @@ types:
       - id: transmitted_number
         size: 14
       - id: served_dxt
-        type: four_byte_bcd
+        type: for_byte_bcd
         size: 4
       - id: out_int
         size: 6
@@ -343,14 +343,85 @@ types:
       - id: version
         type: u1
       - id: dxt_id
-        type: four_byte_bcd
-	size: 4
+        type: for_byte_bcd
       - id: checksum
         type: u2
       - id: seq_num
         type: u2
-      - id: body
-        size: 262-2-1-1-4-4
+      - id: nm_of_ss
+        type: u1
+      - id: call_reference
+        type: u4
+      - id: served_number
+        size: 10
+      - id: served_nitsi
+        size: 10
+      - id: organisation_block
+        size: 12
+      - id: calling_number
+        size: 14
+      - id: translated_number
+        size: 14
+      - id: translated_nitsi
+        size: 10
+      - id: connected_number
+        size: 14
+      - id: connected_nitsi
+        size: 10
+      - id: connection_group
+        size: 2
+      - id: connected_dxt
+        type: for_byte_bcd
+        size: 4
+      - id: location
+        type: u2
+      - id: cell_identity
+        size: 1
+      - id: target_dxt
+        type: for_byte_bcd
+        size: 4
+      - id: targget_location
+        type: u2
+      - id: targget_ch_type
+        type: u2
+      - id: sds_tl_protocol
+        type: u1
+      - id: forward_number
+        size: 14
+      - id: translated_forward_number
+        size: 13
+      - id: report_flag
+        type: u1
+        enum: sds_report_flag
+      - id: message_reference
+        type: u1
+      - id: service_type
+        type: u1
+        enum: sds_service_type
+      - id: sds_type
+        type: u1
+        enum: sds_type
+      - id: length
+        type: u4
+      - id: sending_profile
+        type: u1
+      - id: num_of_groups
+        type: u1
+      - id: list_of_groups
+        size: 80
+      - id: time_stamp
+        size: 8
+        type: time
+      - id: cells_distr
+        type: u2
+      - id: cells_reached
+        type: u2
+      - id: dispatchers_reached
+        type: u1
+      - id: result_sds
+        type: u1
+      - id: diagnostics
+        type: u2
   pd:
     seq:
       - id: body
@@ -363,7 +434,7 @@ types:
     - id: version
       type: u1
     - id: dxt
-      type: four_byte_bcd
+      type: for_byte_bcd
       size: 4
     - id: checksum
       type: u2
@@ -390,10 +461,10 @@ types:
     - id: subscriber_class
       size: 2
     - id: dxt_id
-      type: four_byte_bcd
+      type: for_byte_bcd
       size: 4
     - id: prev_dxt_id
-      type: four_byte_bcd
+      type: for_byte_bcd
       size: 4
     - id: location
       type: u2
@@ -418,7 +489,7 @@ types:
       - id: body
         size: 24
 
-  four_byte_bcd:
+  for_byte_bcd:
     seq:
       - id: fourth
         type: bcd(2, 4, false)
@@ -498,3 +569,18 @@ enums:
     9: fnimet
     10: sip
     255: err
+  sds_report_flag:
+    0: message
+    1: report
+    255: status
+  sds_service_type:
+    0: notack
+    1: ack
+    255: unknown
+  sds_type:
+    0: sds1
+    1: sds2
+    2: sds3
+    3: sds4
+    4: status
+    255: unknown
