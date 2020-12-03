@@ -262,7 +262,7 @@ class Gcdr:
                 str(self.if_out),
                 self.dvo.edge_dxt_id,
                 self.dvo.rouming_dxt_id,
-                self.call_termination.value,
+                '{0:02d}'.format(self.call_termination.value),
                 self.provider_id,
                 self.abon_a.get_number(),
                 self._normalized_location(self.abon_a.start_location),
