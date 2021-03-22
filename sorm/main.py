@@ -423,10 +423,8 @@ def connect_to_db():
     """ connect_to_db to MySQL database """
     conn = None
     try:
-        conn = mysql.connector.connect(host='172.20.132.239:3306',
-                                       database='last_reg_db',
-                                       user='root',
-                                       password='root')
+        conn = mysql.connector.connect(host='172.20.132.239',
+                database='last_reg_db', user='root', password='root')
         if conn.is_connected():
             #print('connect_to_db to MySQL database')
             return conn
