@@ -46,14 +46,17 @@ def main(files, ptus):
                 logger
                 )
             write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
+            sys.exit(0)
         except ValueError as err:
             logger.error(err)
+            sys.exit(1)
         except AttributeError as err:
             logger.error(f'Check Tetra software release. {err}')
             track = traceback.format_exc()
-            print(track)
+            sys.exit(1)
         except Exception as exp:
             logger.error(f'No Tetra format or file corrupted {exp}')
+            sys.exit(1)
 
 def cdr_parser(
     filename, version: int, provider_id: int, logger
@@ -432,6 +435,7 @@ def connect_to_db():
 
     except Error as e:
         print(e)
+        sys.exit(1)
 
 
 def write_data (issi, data, conn):
@@ -460,8 +464,13 @@ def write_data (issi, data, conn):
 
     except Error as e:
         print(e)
+        sys.exit(1)
 
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Error as e:
+        logger.error(e)
+        sys.exit(1)
