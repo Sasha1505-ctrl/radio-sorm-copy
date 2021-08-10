@@ -22,6 +22,9 @@ from utility import get_logger, set_variables, bcd_to_str, bcd_to_time, to_sec
 from pprint import pprint
 UNDEFINED_LOCATION: int = 0
 
+import mysql.connector
+from mysql.connector import Error
+
 
 @click.command()
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
@@ -43,22 +46,23 @@ def main(files, ptus):
                 logger
                 )
             write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
+            sys.exit(0)
         except ValueError as err:
             logger.error(err)
+            sys.exit(1)
         except AttributeError as err:
             logger.error(f'Check Tetra software release. {err}')
             track = traceback.format_exc()
-            print(track)
+            sys.exit(1)
         except Exception as exp:
-            logger.error(f'No Tetra format or file corrupted {exp}')    
-
+            logger.error(f'No Tetra format or file corrupted {exp}')
+            sys.exit(1)
 
 def cdr_parser(
     filename, version: int, provider_id: int, logger
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
 
     logger.debug(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
-
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
     elif version == 7:
@@ -84,6 +88,8 @@ def cdr_parser(
 
     void_int = Interfacez(MockInt())
 
+    conn = connect_to_db()
+
     for blk in target.block:
         logger.debug(f'Starting new block {blk.header.block_num} in CDR file')
         for event in blk.events.event:
@@ -94,7 +100,6 @@ def cdr_parser(
                     logger.error(f'Неожиданное вхождение TOC записи в {filename}.'
                                  f'Call stack member is {rec.type} -> '
                                  f'cr: {rec.call_reference}')
- 
                 logger.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
                 if event.body.members == 65535:
                     # Обработка персонального вызова
@@ -335,6 +340,10 @@ def cdr_parser(
                 )
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
+
+                write_data (reg.get_number(), bcd_to_time(event.body.timestamp), conn)
+
+
             if event.body.type == Tetra.Types.sms:
                 """ Обработка записи о текстовом сообщении """
                 logger.debug("I'am find SMS")
@@ -413,6 +422,55 @@ def write_to_csv(
             cdr.abon_b.get_last_location(reg_buff, cdr.date, cdr.call_duration)
             wr.writerow(list(cdr))
 
+def connect_to_db():
+    """ connect_to_db to MySQL database """
+    conn = None
+    try:
+        conn = mysql.connector.connect(host='172.20.132.239',
+                database='last_reg_db', user='root', password='root')
+        if conn.is_connected():
+            #print('connect_to_db to MySQL database')
+            return conn
+
+
+    except Error as e:
+        print(e)
+        sys.exit(1)
+
+
+def write_data (issi, data, conn):
+
+    try:
+        cursor = conn.cursor()
+        query = ""
+
+        query = ("INSERT INTO registration"
+            "(ISSI, DATE_TIME, METRIC) "
+            "VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE DATE_TIME=%s, METRIC=%s")
+        data_query= (issi, data, issi, data, issi)
+        print (data_query)
+        cursor.execute(query, data_query)
+        conn.commit()
+
+        query = ("INSERT INTO all_registration"
+            "(ISSI, DATE_TIME, METRIC) "
+            "VALUES (%s, %s, %s)")
+        #print(query)
+        data_query= (1, data, issi)
+        #print (data_query)
+
+        cursor.execute(query, data_query)
+        conn.commit()
+
+    except Error as e:
+        print(e)
+        sys.exit(1)
+
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Error as e:
+        logger.error(e)
+        sys.exit(1)
