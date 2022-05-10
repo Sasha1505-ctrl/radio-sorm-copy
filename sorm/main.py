@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from asyncio.log import logger
 import traceback
 from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
@@ -47,11 +48,11 @@ def main(files, ptus):
             logger.error(err)
             sys.exit(1)
         except AttributeError as err:
-            logger.error(f"Check Tetra software release. {err}")
+            logger.error(f"Check Tetra software release: {err}")
             track = traceback.format_exc()
             sys.exit(1)
         except Exception as exp:
-            logger.error(f"No Tetra format or file corrupted {exp}")
+            logger.error(f"No Tetra format or file corrupted: {exp}")
             sys.exit(1)
 
 
@@ -444,7 +445,7 @@ def connect_to_db():
 
     except mysql.connector.Error as e:
         print(e)
-        sys.exit(1)
+        logger.error(f"Connection error: {e}")
 
 
 def write_data(issi, data, conn):
@@ -477,7 +478,8 @@ def write_data(issi, data, conn):
 
     except mysql.connector.Error as e:
         print(e)
-        sys.exit(1)
+        logger.error(f"Can't write data: {e}")
+        raise
 
 
 if __name__ == "__main__":
