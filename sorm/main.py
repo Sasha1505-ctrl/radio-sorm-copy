@@ -4,6 +4,9 @@ from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
 import click, csv, sys
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
+
+import mysql.connector
+
 from sqlalchemy import (
     Table,
     Column,
@@ -19,44 +22,38 @@ from enum import Enum
 
 from utility import get_logger, set_variables, bcd_to_str, bcd_to_time, to_sec
 
-from pprint import pprint
 UNDEFINED_LOCATION: int = 0
-
-import mysql.connector
-from mysql.connector import Error
 
 
 @click.command()
-@click.argument('files', nargs=-1, type=click.Path(exists=True))
+@click.argument("files", nargs=-1, type=click.Path(exists=True))
 @click.option(
-    '--ptus', type=click.Choice(['SK', 'SV', 'VV', 'PO', 'PI'], case_sensitive=False)
+    "--ptus", type=click.Choice(["SK", "SV", "VV", "PO", "PI"], case_sensitive=False)
 )
 def main(files, ptus):
     var_dict = set_variables(ptus)
-    logger = get_logger(var_dict.get('log'))
+    logger = get_logger(var_dict.get("log"))
 
     for cdr_file in files:
-        logger.info(f'Processing {cdr_file}')
+        logger.info(f"Processing {cdr_file}")
         path = Path(cdr_file)
         try:
             out_buffers: Tuple[List[Gcdr], DefaultDict[str, List[Reg]]] = cdr_parser(
-                path,
-                var_dict.get('dxt_release'),
-                var_dict.get('provider_id'),
-                logger
-                )
+                path, var_dict.get("dxt_release"), var_dict.get("provider_id"), logger
+            )
             write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
             sys.exit(0)
         except ValueError as err:
             logger.error(err)
             sys.exit(1)
         except AttributeError as err:
-            logger.error(f'Check Tetra software release. {err}')
+            logger.error(f"Check Tetra software release. {err}")
             track = traceback.format_exc()
             sys.exit(1)
         except Exception as exp:
-            logger.error(f'No Tetra format or file corrupted {exp}')
+            logger.error(f"No Tetra format or file corrupted {exp}")
             sys.exit(1)
+
 
 def cdr_parser(
     filename, version: int, provider_id: int, logger
@@ -68,7 +65,7 @@ def cdr_parser(
     elif version == 7:
         from kaitai.parser.tetra_v7 import Tetra
     else:
-        logger.error(f'Не удалось загрузить модуль парсера')
+        logger.error(f"Не удалось загрузить модуль парсера")
         raise Exception("Не удалось загрузить модуль парсера")
 
     target = Tetra.from_file(filename)
@@ -91,16 +88,20 @@ def cdr_parser(
     conn = connect_to_db()
 
     for blk in target.block:
-        logger.debug(f'Starting new block {blk.header.block_num} in CDR file')
+        logger.debug(f"Starting new block {blk.header.block_num} in CDR file")
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
-                """ Обработка записи инициализации вызова TOC """
+                """Обработка записи инициализации вызова TOC"""
                 if call_stack:
                     rec = call_stack.pop()
-                    logger.error(f'Неожиданное вхождение TOC записи в {filename}.'
-                                 f'Call stack member is {rec.type} -> '
-                                 f'cr: {rec.call_reference}')
-                logger.debug(f'TOC: {event.body.seq_num} cr: {event.body.call_reference}')
+                    logger.error(
+                        f"Неожиданное вхождение TOC записи в {filename}."
+                        f"Call stack member is {rec.type} -> "
+                        f"cr: {rec.call_reference}"
+                    )
+                logger.debug(
+                    f"TOC: {event.body.seq_num} cr: {event.body.call_reference}"
+                )
                 if event.body.members == 65535:
                     # Обработка персонального вызова
                     if event.body.call_reference == 0:
@@ -171,13 +172,17 @@ def cdr_parser(
                     )
                     cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.tcc:
-                """ Обработка запси терминации вызова TCC """
+                """Обработка запси терминации вызова TCC"""
                 if not call_stack:
-                    logger.error(f'Не обработаны записи TOC или InG для звонка'
-                                 f'{event.body.type} -> cr: {event.body.call_reference}')
+                    logger.error(
+                        f"Не обработаны записи TOC или InG для звонка"
+                        f"{event.body.type} -> cr: {event.body.call_reference}"
+                    )
                     continue
 
-                logger.debug(f"TCC: {event.body.seq_num} cr: {event.body.call_reference}")
+                logger.debug(
+                    f"TCC: {event.body.seq_num} cr: {event.body.call_reference}"
+                )
                 partial_cdr = call_stack.pop()
                 if partial_cdr.call_reference == event.body.call_reference:
                     """Все совпало. Будем собирать Gcdr"""
@@ -254,7 +259,9 @@ def cdr_parser(
                     raise ValueError(
                         f"Не обработана запись TOC для звонка {event.body.call_reference}"
                     )
-                logger.debug(f"OutG: {event.body.seq_num} cr: {event.body.call_reference}")
+                logger.debug(
+                    f"OutG: {event.body.seq_num} cr: {event.body.call_reference}"
+                )
                 toc: Tetra.Toc = call_stack.pop()
                 out_g: Tetra.OutG = event.body
                 userA = Subscriber(
@@ -287,14 +294,16 @@ def cdr_parser(
                 )
                 cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.in_g:
-                """ Обработка записи звонка пришедшего из внешней сети """
+                """Обработка записи звонка пришедшего из внешней сети"""
                 if len(call_stack) != 0:
                     raise ValueError(
                         f"Неожиданное вхождение записи IN_G."
                         f"Обработка звонка {event.body.call_reference}"
                         f"завершена не корректно."
                     )
-                logger.debug(f"InG: {event.body.seq_num} cr: {event.body.call_reference}")
+                logger.debug(
+                    f"InG: {event.body.seq_num} cr: {event.body.call_reference}"
+                )
                 if event.body.call_reference == 0:
                     # Звонок не состоялся. Строим GCDR и сохраняем его в CSV
                     in_g: Tetra.InG = event.body
@@ -332,7 +341,7 @@ def cdr_parser(
                     call_stack.append(event.body)
 
             if event.body.type == Tetra.Types.reg:
-                """ Обработка записи о регистрации абонента """
+                """Обработка записи о регистрации абонента"""
                 logger.debug(
                     f"REG: {event.body.seq_num} "
                     f"SERVED_NITSI: {bcd_to_str(event.body.served_nitsi)} "
@@ -341,26 +350,25 @@ def cdr_parser(
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
 
-                write_data (reg.get_number(), bcd_to_time(event.body.timestamp), conn)
-
+                write_data(reg.get_number(), bcd_to_time(event.body.timestamp), conn)
 
             if event.body.type == Tetra.Types.sms:
-                """ Обработка записи о текстовом сообщении """
+                """Обработка записи о текстовом сообщении"""
                 logger.debug("I'am find SMS")
                 sds: Tetra.Sds = event.body
                 userA = Subscriber(
-                     UserType.inner,
-                     bcd_to_str(sds.served_number),
-                     sds.location,
-                     sds.location,
-                     logger,
+                    UserType.inner,
+                    bcd_to_str(sds.served_number),
+                    sds.location,
+                    sds.location,
+                    logger,
                 )
                 userB = Subscriber(
-                   UserType.inner,
-                   bcd_to_str(sds.connected_number),
-                   UNDEFINED_LOCATION,
-                   UNDEFINED_LOCATION,
-                   logger,
+                    UserType.inner,
+                    bcd_to_str(sds.connected_number),
+                    UNDEFINED_LOCATION,
+                    UNDEFINED_LOCATION,
+                    logger,
                 )
                 dvo = Dvo(False)
                 gdp = Gcdr(
@@ -422,55 +430,59 @@ def write_to_csv(
             cdr.abon_b.get_last_location(reg_buff, cdr.date, cdr.call_duration)
             wr.writerow(list(cdr))
 
+
 def connect_to_db():
-    """ connect_to_db to MySQL database """
+    """connect_to_db to MySQL database"""
     conn = None
     try:
-        conn = mysql.connector.connect(host='172.20.132.239',
-                database='last_reg_db', user='root', password='root')
+        conn = mysql.connector.connect(
+            host="172.20.132.239", database="last_reg_db", user="root", password="root"
+        )
         if conn.is_connected():
-            #print('connect_to_db to MySQL database')
+            # print('connect_to_db to MySQL database')
             return conn
 
-
-    except Error as e:
+    except mysql.connector.Error as e:
         print(e)
         sys.exit(1)
 
 
-def write_data (issi, data, conn):
+def write_data(issi, data, conn):
 
     try:
         cursor = conn.cursor()
         query = ""
 
-        query = ("INSERT INTO registration"
+        query = (
+            "INSERT INTO registration"
             "(ISSI, DATE_TIME, METRIC) "
-            "VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE DATE_TIME=%s, METRIC=%s")
-        data_query= (issi, data, issi, data, issi)
-        print (data_query)
+            "VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE DATE_TIME=%s, METRIC=%s"
+        )
+        data_query = (issi, data, issi, data, issi)
+        print(data_query)
         cursor.execute(query, data_query)
         conn.commit()
 
-        query = ("INSERT INTO all_registration"
+        query = (
+            "INSERT INTO all_registration"
             "(ISSI, DATE_TIME, METRIC) "
-            "VALUES (%s, %s, %s)")
-        #print(query)
-        data_query= (1, data, issi)
-        #print (data_query)
+            "VALUES (%s, %s, %s)"
+        )
+        # print(query)
+        data_query = (1, data, issi)
+        # print (data_query)
 
         cursor.execute(query, data_query)
         conn.commit()
 
-    except Error as e:
+    except mysql.connector.Error as e:
         print(e)
         sys.exit(1)
-
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Error as e:
+    except mysql.connector.Error as e:
         logger.error(e)
         sys.exit(1)
