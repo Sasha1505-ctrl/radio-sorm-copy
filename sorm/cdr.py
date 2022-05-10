@@ -3,17 +3,12 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import (
-    Optional,
-    List,
-    DefaultDict,
-    TYPE_CHECKING
-)
+from typing import Optional, List, DefaultDict, TYPE_CHECKING
 from typing_extensions import final
 
 if TYPE_CHECKING:
     from kaitai.parser.tetra_v5 import Tetra
-from sorm.utility import bcd_to_str, bcd_to_time
+from utility import bcd_to_str, bcd_to_time
 import logging
 
 
@@ -49,13 +44,13 @@ class Reg:
 
     # TODO эта функция копирует функционал get_number класса Subscriber
     def get_number(self) -> str:
-        striped_number = self._nitsi.rstrip('f')
+        striped_number = self._nitsi.rstrip("f")
         return re.sub(
-            r'^(10|0e)(20250000)(75)(78)?(\d{4})$',
+            r"^(10|0e)(20250000)(75)(78)?(\d{4})$",
             (
-                lambda m: ''.join(['62', m.group(4), m.group(5)])
+                lambda m: "".join(["62", m.group(4), m.group(5)])
                 if m.group(4)
-                else ''.join(['6200', m.group(5)])
+                else "".join(["6200", m.group(5)])
             ),
             striped_number,
         )
@@ -70,6 +65,7 @@ class Reg:
 
     def __str__(self):
         return f"{self._reg_at}:{self.get_number()}".format(self=self)
+
 
 @final
 @dataclass
@@ -89,15 +85,17 @@ class Subscriber(object):
     _logger: logging
 
     def get_number(self):
-        striped_number = self.number.rstrip('f')
+        striped_number = self.number.rstrip("f")
         if self.stype == UserType.inner:
             # Normalize tetra user number
             return re.sub(
-                r'^(10|0e)(20250000)(75)(78)?(\d{4})$',
+                r"^(10|0e)(20250000)(75)(78)?(\d{4})$",
                 (
-                    lambda m: ''.join(['62', m.group(4), m.group(5)])
+                    lambda m: "".join(["62", m.group(4), m.group(5)])
                     if m.group(4)
-                    else ''.join(['6278', m.group(5)]) #Add cheat for Kalinich req. Mask group number as a typical abonent.
+                    else "".join(
+                        ["6278", m.group(5)]
+                    )  # Add cheat for Kalinich req. Mask group number as a typical abonent.
                 ),
                 striped_number,
             )
@@ -105,8 +103,8 @@ class Subscriber(object):
             # Normalize VSS user number
             if len(striped_number) == 6:
                 # Cheat for call on short number in Tih 042208
-                return re.sub(r'(04)(\d{4})$', r'6279\g<2>', striped_number)
-            return re.sub(r'^\d*2?(7\d)(\d{4})$', r'62\g<1>\g<2>', striped_number)
+                return re.sub(r"(04)(\d{4})$", r"6279\g<2>", striped_number)
+            return re.sub(r"^\d*2?(7\d)(\d{4})$", r"62\g<1>\g<2>", striped_number)
         return striped_number
 
     #  TODO: масло, маслянное. Думаю нужно переименвать в check_type и
@@ -118,7 +116,8 @@ class Subscriber(object):
         ):
             return UserType.inner
         elif (
-            re.search(r"(112025|0916|0900|04|06)(0)*(75)?(2)?(7\d)?\d{4}", self.number) and self.stype is UserType.outer
+            re.search(r"(112025|0916|0900|04|06)(0)*(75)?(2)?(7\d)?\d{4}", self.number)
+            and self.stype is UserType.outer
         ):
             return UserType.outer
         else:
@@ -139,7 +138,7 @@ class Subscriber(object):
         sd: Start DateTime время начала разговора
         td: Длительность разговора
         """
-        self._logger.debug(f'Abonent type is {self.stype}')
+        self._logger.debug(f"Abonent type is {self.stype}")
         if self.stype == UserType.inner:
             self._logger.debug(f"Check rouming for user {self.get_number()}")
             # pprint(reg_buff.get(gcdr.abon_a.get_number())
@@ -228,7 +227,7 @@ class Gcdr:
 
     @property
     def get_dxt_id(self):
-        return ''.join([hex(i)[2:] for i in self.dxt_id])
+        return "".join([hex(i)[2:] for i in self.dxt_id])
 
     def _format_time(self):
         """
@@ -236,16 +235,16 @@ class Gcdr:
 
         :returns: str '13:59:53 27.04.2018'
         """
-        time = self.date.strftime('%H:%M:%S')
-        date = self.date.strftime('%d.%m.%Y')
-        return ' '.join([time, date])
+        time = self.date.strftime("%H:%M:%S")
+        date = self.date.strftime("%d.%m.%Y")
+        return " ".join([time, date])
 
     def _normalized_location(self, location) -> str:
         """
         Request from OASR for back capability
         """
         if location == 65535:
-            return '0'
+            return "0"
         return location
 
     def __iter__(self):
@@ -262,7 +261,7 @@ class Gcdr:
                 str(self.if_out),
                 self.dvo.edge_dxt_id,
                 self.dvo.rouming_dxt_id,
-                '{0:02d}'.format(self.call_termination.value),
+                "{0:02d}".format(self.call_termination.value),
                 self.provider_id,
                 self.abon_a.get_number(),
                 self._normalized_location(self.abon_a.start_location),
