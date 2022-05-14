@@ -6,8 +6,6 @@ from collections import deque, defaultdict
 import click, csv, sys
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
 
-import mysql.connector
-
 from sqlalchemy import (
     Table,
     Column,
@@ -54,6 +52,8 @@ def main(files, ptus):
         except Exception as exp:
             logger.error(f"No Tetra format or file corrupted: {exp}")
             sys.exit(1)
+        finally:
+            traceback.print_exc()
 
 
 def cdr_parser(
@@ -351,8 +351,6 @@ def cdr_parser(
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
 
-                write_data(reg.get_number(), bcd_to_time(event.body.timestamp), conn)
-
             if event.body.type == Tetra.Types.sms:
                 """Обработка записи о текстовом сообщении"""
                 logger.debug("I'am find SMS")
@@ -432,59 +430,5 @@ def write_to_csv(
             wr.writerow(list(cdr))
 
 
-def connect_to_db():
-    """connect_to_db to MySQL database"""
-    conn = None
-    try:
-        conn = mysql.connector.connect(
-            host="172.20.132.239", database="last_reg_db", user="root", password="root"
-        )
-        if conn.is_connected():
-            # print('connect_to_db to MySQL database')
-            return conn
-
-    except mysql.connector.Error as e:
-        print(e)
-        logger.error(f"Connection error: {e}")
-
-
-def write_data(issi, data, conn):
-
-    try:
-        cursor = conn.cursor()
-        query = ""
-
-        query = (
-            "INSERT INTO registration"
-            "(ISSI, DATE_TIME, METRIC) "
-            "VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE DATE_TIME=%s, METRIC=%s"
-        )
-        data_query = (issi, data, issi, data, issi)
-        print(data_query)
-        cursor.execute(query, data_query)
-        conn.commit()
-
-        query = (
-            "INSERT INTO all_registration"
-            "(ISSI, DATE_TIME, METRIC) "
-            "VALUES (%s, %s, %s)"
-        )
-        # print(query)
-        data_query = (1, data, issi)
-        # print (data_query)
-
-        cursor.execute(query, data_query)
-        conn.commit()
-
-    except mysql.connector.Error as e:
-        print(e)
-        logger.error(f"Can't write data: {e}")
-        raise
-
-
 if __name__ == "__main__":
-    try:
-        main()
-    except mysql.connector.Error as e:
-        logger.error(e)
-        sys.exit(1)
+    main()
