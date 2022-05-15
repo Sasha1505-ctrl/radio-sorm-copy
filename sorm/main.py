@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from asyncio.log import logger
+from mimetypes import init
 import traceback
 from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
+from venv import create
 import click, csv, sys
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
 
@@ -16,6 +17,8 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     create_engine,
 )
+from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy_utils import database_exists, create_database
 from pathlib import Path
 from enum import Enum
 
@@ -41,6 +44,7 @@ def main(files, ptus):
                 path, var_dict.get("dxt_release"), var_dict.get("provider_id"), logger
             )
             write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
+            write_to_db(out_buffers[1], var_dict.get("url_db"))
         except ValueError as err:
             logger.error(err)
             sys.exit(1)
@@ -386,31 +390,45 @@ def cdr_parser(
             f"End reading block. Calls quantity: {len(cdr_buffer)}."
             f"Regs quantity: {len(reg_buffer)}"
         )
-        # Write REG records to BD
-
-        # if len(reg_buffer) > 0:
-        #   conn.execute(REGS_TABLE.insert(), reg_buffer)
-        #   reg_buffer.clear()
     return cdr_buffer, reg_buffer
 
 
+def write_to_db(reg_dict, url_db):
+    """
+    Write REGs record to db
+    """
+    conn, REGS_TABLE = init_db(url_db)
+    buffer = []
+    for nitsi in reg_dict:
+        if len(reg_dict[nitsi]) > 0:
+            for reg in reg_dict[nitsi]:
+                buffer.append(reg.__dict__)
+    stmt = insert(REGS_TABLE).values(buffer)
+
+    conn.execute(stmt.on_conflict_do_nothing())
+
+
 def init_db(path):
+    conn = None
     engine = create_engine(f"sqlite:///{path}", echo=True)
     metadata = MetaData()
 
     regs_table = Table(
         "regs",
         metadata,
-        Column("id", Integer, primary_key=True),
-        Column("served_nitsi", String(12)),
-        Column("location", Integer),
-        Column("prev_location", Integer),
-        Column("reg_at", DateTime),
-        PrimaryKeyConstraint("id", "served_nitsi", name="reg_pk"),
+        Column("_id", Integer, primary_key=True),
+        Column("_nitsi", String(12)),
+        Column("_location", Integer),
+        Column("_prev_location", Integer),
+        Column("_reg_at", DateTime),
+        PrimaryKeyConstraint("_id", "_nitsi", name="reg_pk"),
     )
-
+    # Create database if it does not exist.
+    if not database_exists(engine.url):
+        create_database(engine.url)
+    else:
+        conn = engine.connect()
     metadata.create_all(engine)
-    conn = engine.connect()
     return conn, regs_table
 
 

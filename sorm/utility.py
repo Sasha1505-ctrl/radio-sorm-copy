@@ -34,32 +34,34 @@ def to_sec(dec_msec: int) -> timedelta:
     Convert 10 msec unit from Tetra CDR to sec
     dec_msec: unit is 10 milliseconds
     """
-    return timedelta(seconds=round(dec_msec/100))
+    return timedelta(seconds=round(dec_msec / 100))
 
 
 def set_variables(ptus):
     BASE_DIR = Path(__file__).resolve().parent.parent
     # Определяем имя файла журнала
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read(f'{BASE_DIR}/config.properties')
+    config.read(f"{BASE_DIR}/config.properties")
 
-    log_file = BASE_DIR.joinpath(config.get(ptus, 'log'), 'processing.log')
+    log_file = BASE_DIR.joinpath(config.get(ptus, "log"), "processing.log")
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    data_out = BASE_DIR.joinpath(config.get(ptus, 'result'))
+    data_out = BASE_DIR.joinpath(config.get(ptus, "result"))
     data_out.mkdir(parents=True, exist_ok=True)
-    tetra_version: int = int(config.get(ptus, 'version'))
-    provider_id: int = int(config.get(ptus, 'ptus_id'))
+    tetra_version: int = int(config.get(ptus, "version"))
+    provider_id: int = int(config.get(ptus, "ptus_id"))
+    url_db: str = config.get(ptus, "db")
 
     return {
-        'log': log_file,
-        'data': data_out,
-        'dxt_release': tetra_version,
-        'provider_id': provider_id
-        }
+        "log": log_file,
+        "data": data_out,
+        "dxt_release": tetra_version,
+        "provider_id": provider_id,
+        "url_db": url_db,
+    }
 
 
-_log_format = f'%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s'
+_log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
 
 def get_file_handler(filename):
