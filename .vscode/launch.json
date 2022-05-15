@@ -10,7 +10,11 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["CF0005.D00", "--ptus", "SK"]
+            "args": [
+                "data/SKPTUS/in/2020-09-01_0007_CF0356.D00",
+                "--ptus",
+                "SK"
+            ]
         },
     ]
 }

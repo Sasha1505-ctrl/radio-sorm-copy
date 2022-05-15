@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+from mimetypes import init
 import traceback
 from typing import List, Tuple, DefaultDict
 from collections import deque, defaultdict
+from venv import create
 import click, csv, sys
 from cdr import Gcdr, Subscriber, Dvo, Interfacez, UserType, CallType, Reg
-
-import mysql.connector
 
 from sqlalchemy import (
     Table,
@@ -17,6 +17,8 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     create_engine,
 )
+from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy_utils import database_exists, create_database
 from pathlib import Path
 from enum import Enum
 
@@ -42,17 +44,19 @@ def main(files, ptus):
                 path, var_dict.get("dxt_release"), var_dict.get("provider_id"), logger
             )
             write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
-            sys.exit(0)
+            write_to_db(out_buffers[1], var_dict.get("url_db"))
         except ValueError as err:
             logger.error(err)
             sys.exit(1)
         except AttributeError as err:
-            logger.error(f"Check Tetra software release. {err}")
+            logger.error(f"Check Tetra software release: {err}")
             track = traceback.format_exc()
             sys.exit(1)
         except Exception as exp:
-            logger.error(f"No Tetra format or file corrupted {exp}")
+            logger.error(f"No Tetra format or file corrupted: {exp}")
             sys.exit(1)
+        finally:
+            traceback.print_exc()
 
 
 def cdr_parser(
@@ -84,8 +88,6 @@ def cdr_parser(
             self.pui_index = 0
 
     void_int = Interfacez(MockInt())
-
-    conn = connect_to_db()
 
     for blk in target.block:
         logger.debug(f"Starting new block {blk.header.block_num} in CDR file")
@@ -350,8 +352,6 @@ def cdr_parser(
                 reg = Reg(event.body)
                 reg_buffer[reg.get_number()].append(reg)
 
-                write_data(reg.get_number(), bcd_to_time(event.body.timestamp), conn)
-
             if event.body.type == Tetra.Types.sms:
                 """Обработка записи о текстовом сообщении"""
                 logger.debug("I'am find SMS")
@@ -390,31 +390,45 @@ def cdr_parser(
             f"End reading block. Calls quantity: {len(cdr_buffer)}."
             f"Regs quantity: {len(reg_buffer)}"
         )
-        # Write REG records to BD
-
-        # if len(reg_buffer) > 0:
-        #   conn.execute(REGS_TABLE.insert(), reg_buffer)
-        #   reg_buffer.clear()
     return cdr_buffer, reg_buffer
 
 
+def write_to_db(reg_dict, url_db):
+    """
+    Write REGs record to db
+    """
+    conn, REGS_TABLE = init_db(url_db)
+    buffer = []
+    for nitsi in reg_dict:
+        if len(reg_dict[nitsi]) > 0:
+            for reg in reg_dict[nitsi]:
+                buffer.append(reg.__dict__)
+    stmt = insert(REGS_TABLE).values(buffer)
+
+    conn.execute(stmt.on_conflict_do_nothing())
+
+
 def init_db(path):
+    conn = None
     engine = create_engine(f"sqlite:///{path}", echo=True)
     metadata = MetaData()
 
     regs_table = Table(
         "regs",
         metadata,
-        Column("id", Integer, primary_key=True),
-        Column("served_nitsi", String(12)),
-        Column("location", Integer),
-        Column("prev_location", Integer),
-        Column("reg_at", DateTime),
-        PrimaryKeyConstraint("id", "served_nitsi", name="reg_pk"),
+        Column("_id", Integer, primary_key=True),
+        Column("_nitsi", String(12)),
+        Column("_location", Integer),
+        Column("_prev_location", Integer),
+        Column("_reg_at", DateTime),
+        PrimaryKeyConstraint("_id", "_nitsi", name="reg_pk"),
     )
-
+    # Create database if it does not exist.
+    if not database_exists(engine.url):
+        create_database(engine.url)
+    else:
+        conn = engine.connect()
     metadata.create_all(engine)
-    conn = engine.connect()
     return conn, regs_table
 
 
@@ -431,58 +445,5 @@ def write_to_csv(
             wr.writerow(list(cdr))
 
 
-def connect_to_db():
-    """connect_to_db to MySQL database"""
-    conn = None
-    try:
-        conn = mysql.connector.connect(
-            host="172.20.132.239", database="last_reg_db", user="root", password="root"
-        )
-        if conn.is_connected():
-            # print('connect_to_db to MySQL database')
-            return conn
-
-    except mysql.connector.Error as e:
-        print(e)
-        sys.exit(1)
-
-
-def write_data(issi, data, conn):
-
-    try:
-        cursor = conn.cursor()
-        query = ""
-
-        query = (
-            "INSERT INTO registration"
-            "(ISSI, DATE_TIME, METRIC) "
-            "VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE DATE_TIME=%s, METRIC=%s"
-        )
-        data_query = (issi, data, issi, data, issi)
-        print(data_query)
-        cursor.execute(query, data_query)
-        conn.commit()
-
-        query = (
-            "INSERT INTO all_registration"
-            "(ISSI, DATE_TIME, METRIC) "
-            "VALUES (%s, %s, %s)"
-        )
-        # print(query)
-        data_query = (1, data, issi)
-        # print (data_query)
-
-        cursor.execute(query, data_query)
-        conn.commit()
-
-    except mysql.connector.Error as e:
-        print(e)
-        sys.exit(1)
-
-
 if __name__ == "__main__":
-    try:
-        main()
-    except mysql.connector.Error as e:
-        logger.error(e)
-        sys.exit(1)
+    main()
