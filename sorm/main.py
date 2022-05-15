@@ -41,7 +41,6 @@ def main(files, ptus):
                 path, var_dict.get("dxt_release"), var_dict.get("provider_id"), logger
             )
             write_to_csv(out_buffers, f'{var_dict.get("data")}/{Path(path).name}')
-            sys.exit(0)
         except ValueError as err:
             logger.error(err)
             sys.exit(1)
@@ -85,8 +84,6 @@ def cdr_parser(
             self.pui_index = 0
 
     void_int = Interfacez(MockInt())
-
-    conn = connect_to_db()
 
     for blk in target.block:
         logger.debug(f"Starting new block {blk.header.block_num} in CDR file")
