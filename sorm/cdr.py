@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, unique
 from typing import Optional, List, DefaultDict, TYPE_CHECKING
-from typing_extensions import final
 
 if TYPE_CHECKING:
     from kaitai.parser.tetra_v5 import Tetra
@@ -67,7 +66,6 @@ class Reg:
         return f"{self._reg_at}:{self.get_number()}".format(self=self)
 
 
-@final
 @dataclass
 class Subscriber(object):
     """
