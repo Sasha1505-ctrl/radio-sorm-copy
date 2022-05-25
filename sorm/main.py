@@ -30,7 +30,7 @@ UNDEFINED_LOCATION: int = 0
 @click.command()
 @click.argument("files", nargs=-1, type=click.Path(exists=True))
 @click.option(
-    "--ptus", type=click.Choice(["SK", "SV", "VV", "PO", "PI"], case_sensitive=False)
+    "--ptus", type=click.Choice(["SK", "SV", "VV", "PO", "PI", "DV"], case_sensitive=False)
 )
 def main(files, ptus):
     var_dict = set_variables(ptus)
@@ -66,6 +66,8 @@ def cdr_parser(
     logger.debug(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
     if version == 5:
         from kaitai.parser.tetra_v5 import Tetra
+    if version == 6:
+        from kaitai.parser.tetra_v6 import Tetra
     elif version == 7:
         from kaitai.parser.tetra_v7 import Tetra
     else:
@@ -297,12 +299,6 @@ def cdr_parser(
                 cdr_buffer.append(gdp)
             if event.body.type == Tetra.Types.in_g:
                 """Обработка записи звонка пришедшего из внешней сети"""
-                if len(call_stack) != 0:
-                    raise ValueError(
-                        f"Неожиданное вхождение записи IN_G."
-                        f"Обработка звонка {event.body.call_reference}"
-                        f"завершена не корректно."
-                    )
                 logger.debug(
                     f"InG: {event.body.seq_num} cr: {event.body.call_reference}"
                 )

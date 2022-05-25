@@ -50,7 +50,7 @@ def set_variables(ptus):
     data_out.mkdir(parents=True, exist_ok=True)
     tetra_version: int = int(config.get(ptus, "version"))
     provider_id: int = int(config.get(ptus, "ptus_id"))
-    url_db: str = config.get(ptus, "db")
+    url_db: str = config.get("Common", "db")
 
     return {
         "log": log_file,
