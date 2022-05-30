@@ -11,7 +11,7 @@ if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
 
 from .bcd import Bcd
 class Tetra(KaitaiStruct):
-    """CDR Parser for Tetra switch software v7.0
+    """CDR Parser for Tetra switch software v6.0
     """
 
     class SdsReportFlag(Enum):
@@ -575,7 +575,4 @@ class Tetra(KaitaiStruct):
             while not self._io.is_eof():
                 self.event.append(Tetra.Event(self._io, self, self._root))
                 i += 1
-
-
-
-
+                
