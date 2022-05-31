@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from ast import If
 from mimetypes import init
 import traceback
 from typing import List, Tuple, DefaultDict
@@ -399,9 +400,9 @@ def write_to_db(reg_dict, url_db):
         if len(reg_dict[nitsi]) > 0:
             for reg in reg_dict[nitsi]:
                 buffer.append(reg.__dict__)
-    stmt = insert(REGS_TABLE).values(buffer)
-
-    conn.execute(stmt.on_conflict_do_nothing())
+    if len(buffer):
+        stmt = insert(REGS_TABLE).values(buffer)
+        conn.execute(stmt.on_conflict_do_nothing())
 
 
 def init_db(path):
@@ -412,8 +413,8 @@ def init_db(path):
     regs_table = Table(
         "regs",
         metadata,
-        Column("_id", Integer, primary_key=True),
-        Column("_nitsi", String(12)),
+        Column("_id", Integer, nullable=True),
+        Column("_nitsi", String(12), nullable=True),
         Column("_location", Integer),
         Column("_prev_location", Integer),
         Column("_reg_at", DateTime),
