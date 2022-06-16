@@ -30,13 +30,20 @@ UNDEFINED_LOCATION: int = 0
 
 @click.command()
 @click.argument("files", nargs=-1, type=click.Path(exists=True))
+#выбор птус
 @click.option(
     "--ptus", type=click.Choice(["SK", "SV", "VV", "PO", "PI", "DV"], case_sensitive=False)
 )
 def main(files, ptus):
+    # в зависимости от выбранного птус создает словарь 
+    #     "log": log_file,
+    #     "data": data_out,
+    #     "dxt_release": tetra_version,
+    #     "provider_id": provider_id,
+    #     "url_db": url_db,
     var_dict = set_variables(ptus)
     logger = get_logger(var_dict.get("log"))
-
+    #cdr - call data record
     for cdr_file in files:
         logger.info(f"Processing {cdr_file}")
         path = Path(cdr_file)
@@ -59,7 +66,7 @@ def main(files, ptus):
         finally:
             traceback.print_exc()
 
-
+#вот это надо исправить
 def cdr_parser(
     filename, version: int, provider_id: int, logger
 ) -> Tuple[List[Gcdr], DefaultDict[str, List[Reg]]]:
