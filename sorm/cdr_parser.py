@@ -11,9 +11,9 @@ UNDEFINED_LOCATION: int = 0
 _filename = Path()
 _logger: logging.Logger
 _provider_id: int
-call_stack = deque()
-reg_buffer: DefaultDict[str, List[Reg]] = defaultdict(list)
-cdr_buffer: List[Gcdr] = []
+_call_stack = deque()
+_reg_buffer: DefaultDict[str, List[Reg]] = defaultdict(list)
+_cdr_buffer: List[Gcdr] = []
 
 class MockUi(Enum):
     Inner = 0
@@ -66,15 +66,15 @@ def cdr_parser(
                 processing_sms(event)
 
         logger.info(
-            f"End reading block. Calls quantity: {len(cdr_buffer)}."
-            f"Regs quantity: {len(reg_buffer)}"
+            f"End reading block. Calls quantity: {len(_cdr_buffer)}."
+            f"Regs quantity: {len(_reg_buffer)}"
         )
-    return cdr_buffer, reg_buffer
+    return _cdr_buffer, _reg_buffer
 
 def processing_toc(event):
     """Обработка записи инициализации вызова TOC"""
-    if call_stack:
-        rec = call_stack.pop()
+    if _call_stack:
+        rec = _call_stack.pop()
         _logger.error(
                         f"Неожиданное вхождение TOC записи в {_filename}."
                         f"Call stack member is {rec.type} -> "
@@ -116,10 +116,10 @@ def processing_toc(event):
                             dvo,
                             CallType.toc,
                         )
-            cdr_buffer.append(gdp)
+            _cdr_buffer.append(gdp)
         else:
                         # Звонок состоялся. Инициализируем GCDR и ждем TCC или OutG
-            call_stack.append(event.body)
+            _call_stack.append(event.body)
     else:
                     # Обработка группового вызова. Строим GCDR и сохраняем его в CSV
         toc = event.body
@@ -151,11 +151,11 @@ def processing_toc(event):
                         dvo,
                         CallType.toc,
                     )
-        cdr_buffer.append(gdp)
+        _cdr_buffer.append(gdp)
 
 def processing_tcc(event):
     """Обработка запси терминации вызова TCC"""
-    if not call_stack:
+    if not _call_stack:
         _logger.error(
         f"Не обработаны записи TOC или InG для звонка"
         f"{event.body.type} -> cr: {event.body.call_reference}"
@@ -164,7 +164,7 @@ def processing_tcc(event):
     _logger.debug(
                 f"TCC: {event.body.seq_num} cr: {event.body.call_reference}"
                 )
-    partial_cdr = call_stack.pop()
+    partial_cdr = _call_stack.pop()
     if partial_cdr.call_reference == event.body.call_reference:
         """Все совпало. Будем собирать Gcdr"""
         tcc = event.body
@@ -197,7 +197,7 @@ def processing_tcc(event):
                     dvo,
                     CallType.toctcc,
                 )
-            cdr_buffer.append(gdp)
+            _cdr_buffer.append(gdp)
         elif type(partial_cdr) is Tetra.InG:
             userA = Subscriber(
                 UserType.outer,
@@ -226,7 +226,7 @@ def processing_tcc(event):
                 dvo,
                 CallType.ingtcc,
             )
-            cdr_buffer.append(gdp)
+            _cdr_buffer.append(gdp)
         else:
             raise ValueError(f"Неожиданный тип объекта {type(partial_cdr)}")
     else:
@@ -237,10 +237,10 @@ def processing_tcc(event):
 
 def processing_out_g(event):
     """Обработка записи звонка исходящего на фиксированную сеть TOC -> OutG"""
-    if len(call_stack) == 0:
+    if len(_call_stack) == 0:
         raise ValueError(f"Не обработана запись TOC для звонка {event.body.call_reference}")
     _logger.debug(f"OutG: {event.body.seq_num} cr: {event.body.call_reference}")
-    toc: Tetra.Toc = call_stack.pop()
+    toc: Tetra.Toc = _call_stack.pop()
     out_g: Tetra.OutG = event.body
     userA = Subscriber(
                     UserType.inner,
@@ -270,7 +270,7 @@ def processing_out_g(event):
                     dvo,
                     CallType.tocoutg,
                 )
-    cdr_buffer.append(gdp)
+    _cdr_buffer.append(gdp)
 
 def processing_in_g(event):
     """Обработка записи звонка пришедшего из внешней сети"""
@@ -308,10 +308,10 @@ def processing_in_g(event):
             dvo,
             CallType.ing,
             )
-        cdr_buffer.append(gdp)
+        _cdr_buffer.append(gdp)
     else:
         # Продолжаем обрабатывать звонок
-        call_stack.append(event.body)
+        _call_stack.append(event.body)
 
 def processing_reg(event):
     """Обработка записи о регистрации абонента"""
@@ -321,7 +321,7 @@ def processing_reg(event):
                     f"LOCATION: {event.body.location}:{event.body.prev_location}"
                 )
     reg = Reg(event.body)
-    reg_buffer[reg.get_number()].append(reg)
+    _reg_buffer[reg.get_number()].append(reg)
 
 def processing_sms(event):
     """Обработка записи о текстовом сообщении"""
@@ -355,4 +355,4 @@ def processing_sms(event):
                     dvo,
                     CallType.sms,
                 )
-    cdr_buffer.append(gdp)
+    _cdr_buffer.append(gdp)
