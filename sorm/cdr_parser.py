@@ -35,8 +35,7 @@ def cdr_parser(
     global _provider_id
     _provider_id = provider_id
     _logger = logger
-    _filename = filename
-    target = Tetra.from_file(filename)
+    _filename = filename    
 
     logger.debug(f"Пытаюсь разобрать {filename} при помощи {version} версии парсера")
     if version == 5:
@@ -48,6 +47,8 @@ def cdr_parser(
     else:
         logger.error(f"Не удалось загрузить модуль парсера")
         raise Exception("Не удалось загрузить модуль парсера")
+        
+    target = Tetra.from_file(filename)
 
     for blk in target.block:
         logger.debug(f"Starting new block {blk.header.block_num} in CDR file")
@@ -61,7 +62,7 @@ def cdr_parser(
             if event.body.type == Tetra.Types.in_g:
                 processing_in_g(event, Tetra)
             if event.body.type == Tetra.Types.reg:
-                processing_reg(event, Tetra)
+                processing_reg(event)
             if event.body.type == Tetra.Types.sms:
                 processing_sms(event, Tetra)
 
@@ -313,7 +314,7 @@ def processing_in_g(event, Tetra):
         # Продолжаем обрабатывать звонок
         _call_stack.append(event.body)
 
-def processing_reg(event, Tetra):
+def processing_reg(event):
     """Обработка записи о регистрации абонента"""
     _logger.debug(
                     f"REG: {event.body.seq_num} "
