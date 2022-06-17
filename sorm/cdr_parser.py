@@ -53,17 +53,17 @@ def cdr_parser(
         logger.debug(f"Starting new block {blk.header.block_num} in CDR file")
         for event in blk.events.event:
             if event.body.type == Tetra.Types.toc:
-                processing_toc(event)
+                processing_toc(event, Tetra)
             if event.body.type == Tetra.Types.tcc:
-                processing_tcc(event)
+                processing_tcc(event, Tetra)
             if event.body.type == Tetra.Types.out_g:
-                processing_out_g(event)
+                processing_out_g(event, Tetra)
             if event.body.type == Tetra.Types.in_g:
-                processing_in_g(event)
+                processing_in_g(event, Tetra)
             if event.body.type == Tetra.Types.reg:
-                processing_reg(event)
+                processing_reg(event, Tetra)
             if event.body.type == Tetra.Types.sms:
-                processing_sms(event)
+                processing_sms(event, Tetra)
 
         logger.info(
             f"End reading block. Calls quantity: {len(_cdr_buffer)}."
@@ -71,7 +71,7 @@ def cdr_parser(
         )
     return _cdr_buffer, _reg_buffer
 
-def processing_toc(event):
+def processing_toc(event, Tetra):
     """Обработка записи инициализации вызова TOC"""
     if _call_stack:
         rec = _call_stack.pop()
@@ -153,7 +153,7 @@ def processing_toc(event):
                     )
         _cdr_buffer.append(gdp)
 
-def processing_tcc(event):
+def processing_tcc(event, Tetra):
     """Обработка запси терминации вызова TCC"""
     if not _call_stack:
         _logger.error(
@@ -235,7 +235,7 @@ def processing_tcc(event):
             f"{partial_cdr.call_reference} != {event.body.call_reference}"
         )
 
-def processing_out_g(event):
+def processing_out_g(event, Tetra):
     """Обработка записи звонка исходящего на фиксированную сеть TOC -> OutG"""
     if len(_call_stack) == 0:
         raise ValueError(f"Не обработана запись TOC для звонка {event.body.call_reference}")
@@ -272,7 +272,7 @@ def processing_out_g(event):
                 )
     _cdr_buffer.append(gdp)
 
-def processing_in_g(event):
+def processing_in_g(event, Tetra):
     """Обработка записи звонка пришедшего из внешней сети"""
     _logger.debug(
         f"InG: {event.body.seq_num} cr: {event.body.call_reference}"
@@ -313,7 +313,7 @@ def processing_in_g(event):
         # Продолжаем обрабатывать звонок
         _call_stack.append(event.body)
 
-def processing_reg(event):
+def processing_reg(event, Tetra):
     """Обработка записи о регистрации абонента"""
     _logger.debug(
                     f"REG: {event.body.seq_num} "
@@ -323,7 +323,7 @@ def processing_reg(event):
     reg = Reg(event.body)
     _reg_buffer[reg.get_number()].append(reg)
 
-def processing_sms(event):
+def processing_sms(event, Tetra):
     """Обработка записи о текстовом сообщении"""
     _logger.debug("I'am find SMS")
     sds: Tetra.Sds = event.body
